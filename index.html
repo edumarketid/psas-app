@@ -35,7 +35,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased flex flex-col h-screen overflow-hidden">
 
-    <!-- Top Bar Pengaturan Tampilan -->
+    <!-- Top Bar Pengaturan Tampilan & Koneksi -->
     <header class="no-print bg-slate-800 border-b border-slate-700 px-4 py-2 flex justify-between items-center text-xs z-50">
         <div class="flex items-center space-x-2">
             <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span>
@@ -54,11 +54,11 @@
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Container dengan Dynamic Device Wrapper -->
     <main class="flex-1 flex justify-center items-center bg-slate-950 p-0 sm:p-4 overflow-hidden">
         <div id="device-container" class="device-frame-desktop w-full bg-slate-900 flex flex-col transition-all duration-300 relative shadow-2xl">
             
-            <!-- App Header -->
+            <!-- App Header (Branding SMKN 1 Wakatobi) -->
             <div class="no-print bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-4 border-b border-indigo-800 flex justify-between items-center shadow-md">
                 <div class="flex items-center space-x-3">
                     <div class="bg-blue-600 p-2.5 rounded-xl shadow">
@@ -69,21 +69,25 @@
                         <p class="text-xs text-blue-200" id="lbl-semester-info">Penilaian Sumatif Akhir Semester (SAS)</p>
                     </div>
                 </div>
-                <div id="header-auth-status"></div>
+                <div id="header-auth-status">
+                    <!-- Dynamic Auth Status / Logout Button -->
+                </div>
             </div>
 
             <!-- App Body Content Area -->
-            <div id="app-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-900"></div>
+            <div id="app-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-900">
+                <!-- Rendered dynamically -->
+            </div>
 
             <!-- Footer -->
             <footer class="no-print bg-slate-900 border-t border-slate-800 py-2 text-center text-xs text-slate-500">
-                &copy; 2026 Tim Kurikulum SMKN 1 Wakatobi &bull; Supabase Database Connected
+                &copy; 2026 Tim Kurikulum SMKN 1 Wakatobi &bull; Supabase Backend Connected
             </footer>
 
         </div>
     </main>
 
-    <!-- Global Modal -->
+    <!-- Modal Notifikasi / Alert Global -->
     <div id="global-modal" class="no-print hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
             <div id="modal-icon" class="text-4xl mb-3 text-emerald-400">
@@ -95,15 +99,22 @@
         </div>
     </div>
 
-    <!-- Script Aplikasi -->
+    <!-- Script Logika Aplikasi -->
     <script>
         const SUPABASE_URL = 'https://xtsvuydmdyirsnzrrzmt.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0c3Z1eWRtZHlpcnNuenJyem10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNzA3MjYsImV4cCI6MjEwODc0NjcyNn0.ilTHrt7MYhzhIuctiWedrV8neh1TCS_hIrehmEqSWsI';
         
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_URL) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase initialization warning:", e);
+        }
 
-        let currentUser = null; 
-        let currentSettings = { school_name: 'SMKN 1 Wakatobi', headmaster_name: 'Nama Kepsek, S.Pd., M.Pd.', headmaster_nip: '1970...', academic_year: '2026/2027', semester: 'Ganjil' };
+        let currentUser = null;
+        let currentSettings = { school_name: 'SMKN 1 Wakatobi', headmaster_name: 'Drs. La Ode...', headmaster_nip: '1968...', academic_year: '2026/2027', semester: 'Ganjil' };
         let activeToken = 'SMKN1W';
 
         function setDeviceMode(mode) {
@@ -130,11 +141,17 @@
 
             titleEl.innerText = title;
             msgEl.innerText = message;
-            iconEl.innerHTML = type === 'error' ? '<i class="fa-solid fa-circle-xmark text-rose-500"></i>' : '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            if (type === 'error') {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-500"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            }
             modal.classList.remove('hidden');
         }
 
-        function closeModal() { document.getElementById('global-modal').classList.add('hidden'); }
+        function closeModal() {
+            document.getElementById('global-modal').classList.add('hidden');
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchSettings();
@@ -143,15 +160,19 @@
         });
 
         async function fetchSettings() {
-            const { data } = await supabaseClient.from('settings').select('*').eq('id', 1).single();
-            if (data) currentSettings = data;
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('settings').select('*').eq('id', 1).single();
+                if (data) currentSettings = data;
+            }
             document.getElementById('lbl-school-name').innerText = currentSettings.school_name;
             document.getElementById('lbl-semester-info').innerText = `SAS TA ${currentSettings.academic_year} (${currentSettings.semester})`;
         }
 
         async function fetchLatestToken() {
-            const { data } = await supabaseClient.from('exam_tokens').select('*').order('id', { ascending: false }).limit(1);
-            if (data && data.length > 0) activeToken = data[0].token;
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('exam_tokens').select('*').order('id', { ascending: false }).limit(1);
+                if (data && data.length > 0) activeToken = data[0].token;
+            }
         }
 
         function renderAuthStatus() {
@@ -185,13 +206,17 @@
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <h2 class="text-2xl font-bold text-white">Portal Ujian Sumatif</h2>
-                            <p class="text-sm text-slate-400">SMKN 1 Wakatobi - Standar ANBK / TKA</p>
+                            <p class="text-sm text-slate-400">Pilih akses masuk sesuai peran Anda di SMKN 1 Wakatobi</p>
                         </div>
+
+                        <!-- Tab Selector -->
                         <div class="flex rounded-xl bg-slate-800 p-1.5 border border-slate-700">
                             <button onclick="switchLoginTab('student')" id="tab-student" class="flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow">Siswa</button>
                             <button onclick="switchLoginTab('teacher')" id="tab-teacher" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Guru</button>
                             <button onclick="switchLoginTab('admin')" id="tab-admin" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Admin</button>
                         </div>
+
+                        <!-- Form Login Container -->
                         <div id="login-form-container" class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl"></div>
                     </div>
                 `;
@@ -206,7 +231,9 @@
         function switchLoginTab(role) {
             ['student', 'teacher', 'admin'].forEach(r => {
                 const btn = document.getElementById(`tab-${r}`);
-                if(btn) btn.className = r === role ? "flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow" : "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition";
+                if (btn) {
+                    btn.className = r === role ? "flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow" : "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition";
+                }
             });
 
             const container = document.getElementById('login-form-container');
@@ -215,30 +242,46 @@
             if (role === 'student') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'student')" class="space-y-4">
-                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Login Peserta Ujian</h3>
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Login Siswa</h3>
                         <div>
                             <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Induk Siswa Nasional (NISN)</label>
-                            <input type="text" id="login-nisn" required placeholder="Sesuai Kartu Ujian (ANBK)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                            <input type="text" id="login-nisn" required placeholder="Contoh: 0081234567" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-sm transition">Masuk Ujian</button>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">PIN Siswa (Default: 12345)</label>
+                            <input type="password" id="login-pin" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Ujian</button>
                     </form>
                 `;
             } else if (role === 'teacher') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'teacher')" class="space-y-4">
                         <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Login Guru Mapel</h3>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">No HP</label><input type="text" id="login-phone" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">PIN</label><input type="password" id="login-tpin" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm">Masuk Dashboard</button>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Handphone (WhatsApp)</label>
+                            <input type="text" id="login-phone" required placeholder="Contoh: 081234567890" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">PIN Guru (Default: 12345)</label>
+                            <input type="password" id="login-tpin" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Dashboard Guru</button>
                     </form>
                 `;
             } else if (role === 'admin') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'admin')" class="space-y-4">
                         <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-shield text-amber-400 mr-2"></i>Login Administrator</h3>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">Username</label><input type="text" id="login-admin-user" required value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">Password</label><input type="password" id="login-admin-pass" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl text-sm">Masuk Admin</button>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Username Admin</label>
+                            <input type="text" id="login-admin-user" required value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Password (Default: 12345)</label>
+                            <input type="password" id="login-admin-pass" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Panel Admin</button>
                     </form>
                 `;
             }
@@ -249,25 +292,46 @@
             if (role === 'admin') {
                 const u = document.getElementById('login-admin-user').value;
                 const p = document.getElementById('login-admin-pass').value;
-                const { data } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).single();
-                if (data) currentUser = { role: 'admin', data };
-                else { showModal('Login Gagal', 'Username/Password salah!', 'error'); return; }
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).single();
+                    if (data) {
+                        currentUser = { role: 'admin', data };
+                    } else {
+                        showModal('Login Gagal', 'Username atau password admin salah!', 'error');
+                        return;
+                    }
+                } else {
+                    if (u === 'admin' && p === '12345') currentUser = { role: 'admin', data: { username: 'admin' } };
+                    else { showModal('Login Gagal', 'Username/Password salah', 'error'); return; }
+                }
             } else if (role === 'teacher') {
                 const phone = document.getElementById('login-phone').value;
                 const pin = document.getElementById('login-tpin').value;
-                const { data } = await supabaseClient.from('teachers').select('*').eq('phone', phone).eq('pin', pin).single();
-                if (data) currentUser = { role: 'teacher', data };
-                else { showModal('Login Gagal', 'No HP atau PIN Guru tidak terdaftar!', 'error'); return; }
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('teachers').select('*').eq('phone', phone).eq('pin', pin).single();
+                    if (data) currentUser = { role: 'teacher', data };
+                    else { showModal('Login Gagal', 'No HP atau PIN Guru tidak terdaftar!', 'error'); return; }
+                } else {
+                    currentUser = { role: 'teacher', data: { id: 1, name: 'Guru Demo', phone } };
+                }
             } else if (role === 'student') {
                 const nisn = document.getElementById('login-nisn').value;
-                const { data } = await supabaseClient.from('students').select('*').eq('nisn', nisn).single();
-                if (data) currentUser = { role: 'student', data };
-                else { showModal('Login Gagal', 'NISN tidak ditemukan dalam daftar peserta ujian!', 'error'); return; }
+                const pin = document.getElementById('login-pin').value;
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('students').select('*').eq('nisn', nisn).eq('pin', pin).single();
+                    if (data) currentUser = { role: 'student', data };
+                    else { showModal('Login Gagal', 'NISN atau PIN Siswa salah/tidak ditemukan!', 'error'); return; }
+                } else {
+                    currentUser = { role: 'student', data: { nisn, name: 'Siswa Demo', kelas: 'XI TKJ' } };
+                }
             }
             renderHomeOrDashboard();
-            showModal('Login Berhasil', `Selamat datang, ${currentUser.data.name || currentUser.data.username}`);
+            showModal('Login Berhasil', `Selamat datang, ${currentUser.data.name || currentUser.data.username || 'Pengguna'}`);
         }
 
+        // ==========================================
+        // ADMIN DASHBOARD
+        // ==========================================
         async function renderAdminDashboard() {
             const content = document.getElementById('app-content');
             content.innerHTML = `
@@ -275,15 +339,15 @@
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center"><i class="fa-solid fa-gauge text-amber-400 mr-2"></i>Panel Administrator</h2>
-                            <p class="text-xs text-slate-400">Token Otomatis, Cetak Kartu Ujian Ala ANBK/TKA, Rekap Nilai & Manajemen Siswa.</p>
+                            <p class="text-xs text-slate-400">Token Ujian, Cetak Kartu ANBK, Rekap Nilai, Upload CSV, dan Aktivasi Soal.</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button onclick="adminTab('tokens')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-key mr-1"></i> Token</button>
                             <button onclick="adminTab('reports')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu & Rekap</button>
-                            <button onclick="adminTab('bulk')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-file-arrow-up mr-1"></i> Upload Kolektif</button>
-                            <button onclick="adminTab('settings')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
-                            <button onclick="adminTab('students')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-user-graduate mr-1"></i> Siswa</button>
+                            <button onclick="adminTab('bulk')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-file-arrow-up mr-1"></i> Upload CSV</button>
                             <button onclick="adminTab('exams')" class="px-3 py-1.5 bg-blue-600 text-xs rounded-xl text-white"><i class="fa-solid fa-file-shield mr-1"></i> Soal</button>
+                            <button onclick="adminTab('students')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-user-graduate mr-1"></i> Siswa</button>
+                            <button onclick="adminTab('settings')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
                         </div>
                     </div>
                     <div id="admin-content-area" class="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 sm:p-6"></div>
@@ -301,7 +365,7 @@
                 area.innerHTML = `
                     <div class="max-w-xl mx-auto text-center space-y-6 py-4">
                         <div class="bg-amber-500/10 border border-amber-500/30 p-6 rounded-3xl">
-                            <h3 class="text-sm font-bold text-amber-400 mb-1"><i class="fa-solid fa-bolt mr-2"></i>Token Ujian Otomatis (Refresh 15 Menit)</h3>
+                            <h3 class="text-sm font-bold text-amber-400 mb-1"><i class="fa-solid fa-bolt mr-2"></i>Token Ujian Otomatis (Sistem CAT)</h3>
                             <div class="bg-slate-900 border border-slate-700 py-6 px-4 rounded-2xl font-mono text-4xl sm:text-5xl font-extrabold tracking-widest text-white my-4">${activeToken}</div>
                             <button onclick="generateNewToken()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-3 rounded-xl text-xs shadow-lg">Generate Token Baru</button>
                         </div>
@@ -310,47 +374,49 @@
             } else if (tab === 'bulk') {
                 area.innerHTML = `
                     <div class="space-y-6">
-                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-arrow-up text-emerald-400 mr-2"></i>Upload Data Kolektif Siswa</h3>
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-arrow-up text-emerald-400 mr-2"></i>Upload Data Kolektif Siswa (CSV)</h3>
                         <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4 max-w-xl">
-                            <p class="text-xs text-slate-400">Format CSV: <code class="text-blue-400">nisn,name,kelas</code></p>
-                            <button onclick="downloadStudentTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-600"><i class="fa-solid fa-download mr-1"></i> Unduh Template CSV Siswa</button>
+                            <p class="text-xs text-slate-400">Format kolom CSV: <code class="text-blue-400">nisn,name,kelas,pin</code></p>
+                            <button onclick="downloadStudentTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-600"><i class="fa-solid fa-download mr-1"></i> Unduh Template CSV</button>
                             <input type="file" id="csv-students-file" accept=".csv" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
                             <button onclick="uploadBulkStudents()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl">Proses Upload Siswa</button>
                         </div>
                     </div>
                 `;
             } else if (tab === 'reports') {
-                const { data: studentList } = await supabaseClient.from('students').select('kelas');
-                const uniqueClasses = [...new Set((studentList || []).map(s => s.kelas))].sort();
+                let uniqueClasses = [];
+                if (supabaseClient) {
+                    const { data: studentList } = await supabaseClient.from('students').select('kelas');
+                    uniqueClasses = [...new Set((studentList || []).map(s => s.kelas))].sort();
+                }
 
                 area.innerHTML = `
                     <div class="space-y-6">
-                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-print text-indigo-400 mr-2"></i>Pusat Cetak Kartu Peserta Ujian (Ala TKA / ANBK)</h3>
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-print text-indigo-400 mr-2"></i>Pusat Cetak Kartu Peserta Ujian & Rekap Nilai</h3>
                         
                         <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4">
-                            <h4 class="font-bold text-white text-sm"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>Cetak Kartu Login Peserta per Kelas</h4>
-                            <p class="text-xs text-slate-400">Pilih kelas untuk mencetak kartu peserta ujian resmi dengan NISN sebagai ID Login.</p>
+                            <h4 class="font-bold text-white text-sm"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>Cetak Kartu Login Peserta (Gaya ANBK / TKA)</h4>
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <select id="select-card-class" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
                                     <option value="">-- Pilih Kelas --</option>
                                     ${uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('')}
                                 </select>
-                                <button onclick="printANBKCards()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu Peserta (ANBK Style)</button>
+                                <button onclick="printANBKCards()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu Peserta</button>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between">
                                 <div>
-                                    <h4 class="font-bold text-white text-sm">Rekap Nilai Seluruh Siswa (CSV)</h4>
-                                    <p class="text-xs text-slate-400 mt-1">Unduh seluruh hasil ujian dalam format spreadsheet.</p>
+                                    <h4 class="font-bold text-white text-sm">Rekap Nilai Global (CSV)</h4>
+                                    <p class="text-xs text-slate-400 mt-1">Unduh seluruh hasil ujian siswa dalam format spreadsheet.</p>
                                 </div>
-                                <button onclick="downloadExcelCSV()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-file-excel mr-1"></i> Download CSV</button>
+                                <button onclick="downloadExcelCSV()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-file-excel mr-1"></i> Download Rekap Nilai</button>
                             </div>
                             <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between">
                                 <div>
                                     <h4 class="font-bold text-white text-sm">Berita Acara Pengawasan</h4>
-                                    <p class="text-xs text-slate-400 mt-1">Berita acara resmi pelaksanaan ujian.</p>
+                                    <p class="text-xs text-slate-400 mt-1">Berita acara resmi pelaksanaan ujian CAT.</p>
                                 </div>
                                 <button onclick="printMinutesOfExam()" class="mt-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-file-lines mr-1"></i> Cetak Berita Acara</button>
                             </div>
@@ -370,21 +436,32 @@
                     </form>
                 `;
             } else if (tab === 'students') {
-                const { data: students } = await supabaseClient.from('students').select('*').limit(50);
+                let students = [];
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('students').select('*').limit(50);
+                    students = data || [];
+                }
                 area.innerHTML = `
-                    <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Data Siswa</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-900 text-slate-400"><tr><th class="p-3">NISN (ID Login)</th><th class="p-3">Nama</th><th class="p-3">Kelas</th></tr></thead><tbody class="divide-y divide-slate-700">
-                    ${(students || []).map(s => `<tr><td class="p-3 font-mono">${s.nisn}</td><td class="p-3 font-semibold text-white">${s.name}</td><td class="p-3">${s.kelas}</td></tr>`).join('')}
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Data Siswa</h3>
+                        <button onclick="openAddStudentModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-xl"><i class="fa-solid fa-plus mr-1"></i> Tambah Siswa</button>
+                    </div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-900 text-slate-400"><tr><th class="p-3">NISN</th><th class="p-3">Nama</th><th class="p-3">Kelas</th><th class="p-3">PIN</th><th class="p-3 text-center">Aksi</th></tr></thead><tbody class="divide-y divide-slate-700">
+                    ${students.map(s => `<tr><td class="p-3 font-mono">${s.nisn}</td><td class="p-3 font-semibold text-white">${s.name}</td><td class="p-3">${s.kelas}</td><td class="p-3 font-mono">${s.pin}</td><td class="p-3 text-center"><button onclick="deleteStudent(${s.id})" class="text-rose-400 hover:text-rose-300"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}
                     </tbody></table></div>
                 `;
             } else if (tab === 'exams') {
-                const { data: exams } = await supabaseClient.from('exams').select('*, teachers(name)');
+                let exams = [];
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('exams').select('*, teachers(name)');
+                    exams = data || [];
+                }
                 area.innerHTML = `
-                    <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-file-shield text-amber-400 mr-2"></i>Aktivasi Soal</h3>
+                    <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-file-shield text-amber-400 mr-2"></i>Aktivasi Soal Ujian</h3>
                     <div class="space-y-3">
-                        ${(exams || []).map(ex => `
+                        ${exams.map(ex => `
                             <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl flex justify-between items-center">
-                                <div><h4 class="font-bold text-white text-sm">${ex.title} (${ex.subject})</h4><p class="text-xs text-slate-400">Kelas: ${ex.kelas}</p></div>
+                                <div><h4 class="font-bold text-white text-sm">${ex.title} (${ex.subject})</h4><p class="text-xs text-slate-400">Kelas: ${ex.kelas} &bull; Soal: ${ex.questions?.length || 0}</p></div>
                                 <input type="checkbox" ${ex.is_active ? 'checked' : ''} onchange="toggleExamActivation(${ex.id}, this.checked)" class="w-5 h-5 accent-emerald-600 cursor-pointer">
                             </div>
                         `).join('')}
@@ -393,14 +470,55 @@
             }
         }
 
+        async function generateNewToken() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let token = '';
+            for (let i = 0; i < 6; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
+            if (supabaseClient) {
+                await supabaseClient.from('exam_tokens').insert([{ token }]);
+            }
+            activeToken = token;
+            adminTab('tokens');
+            showModal('Token Baru', `Token: ${token}`);
+        }
+
+        function downloadStudentTemplate() {
+            const csvContent = "nisn,name,kelas,pin\n0081234567,Ahmad Fauzi,XI TKJ,12345\n0087654321,Siti Aminah,XI MM,12345";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'template_siswa_anbk.csv'; a.click();
+        }
+
+        async function uploadBulkStudents() {
+            const fileInput = document.getElementById('csv-students-file');
+            if (!fileInput.files[0]) { showModal('Pilih File', 'Pilih file CSV terlebih dahulu!', 'error'); return; }
+            const text = await fileInput.files[0].text();
+            const lines = text.split('\n').slice(1);
+            let count = 0;
+            for (let line of lines) {
+                const cols = line.trim().split(',');
+                if (cols.length >= 3) {
+                    if (supabaseClient) {
+                        await supabaseClient.from('students').upsert({ nisn: cols[0], name: cols[1], kelas: cols[2], pin: cols[3] || '12345' }, { onConflict: 'nisn' });
+                    }
+                    count++;
+                }
+            }
+            showModal('Berhasil', `${count} data siswa berhasil diunggah.`);
+        }
+
         async function printANBKCards() {
             const selectEl = document.getElementById('select-card-class');
             if (!selectEl) return;
             const selectedClass = selectEl.value;
             if (!selectedClass) { showModal('Pilih Kelas', 'Silakan pilih kelas terlebih dahulu!', 'error'); return; }
 
-            const { data: students } = await supabaseClient.from('students').select('*').eq('kelas', selectedClass);
-            if (!students || students.length === 0) { showModal('Kosong', `Tidak ada siswa di kelas ${selectedClass}`, 'error'); return; }
+            let students = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('students').select('*').eq('kelas', selectedClass);
+                students = data || [];
+            }
+            if (students.length === 0) { showModal('Kosong', `Tidak ada siswa di kelas ${selectedClass}`, 'error'); return; }
 
             const printWin = window.open('', '_blank');
             printWin.document.write(`
@@ -425,10 +543,10 @@
                                 <div class="text-xs space-y-1 my-1">
                                     <div class="flex"><span class="w-20 text-slate-600 font-semibold">Nama:</span><span class="font-bold flex-1">${s.name}</span></div>
                                     <div class="flex"><span class="w-20 text-slate-600 font-semibold">Username:</span><span class="font-mono font-bold text-blue-700 flex-1">${s.nisn}</span></div>
-                                    <div class="flex"><span class="w-20 text-slate-600 font-semibold">Keterangan:</span><span class="text-[10px] text-emerald-700 italic flex-1">Gunakan NISN & Token</span></div>
+                                    <div class="flex"><span class="w-20 text-slate-600 font-semibold">PIN:</span><span class="font-mono font-bold text-emerald-700 flex-1">${s.pin}</span></div>
                                 </div>
                                 <div class="text-[8px] text-slate-500 flex justify-between pt-1 border-t">
-                                    <span>${currentSettings.school_name}</span>
+                                    <span>Token: ${activeToken}</span>
                                     <span>Proktor / Admin</span>
                                 </div>
                             </div>
@@ -441,60 +559,17 @@
             printWin.document.close();
         }
 
-        function downloadStudentTemplate() {
-            const csvContent = "nisn,name,kelas\n0081234567,Ahmad Fauzi,XI TKJ\n0087654321,Siti Aminah,XI MM";
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'template_siswa_anbk.csv'; a.click();
-        }
-
-        async function uploadBulkStudents() {
-            const fileInput = document.getElementById('csv-students-file');
-            if (!fileInput.files[0]) { showModal('Pilih File', 'Pilih file CSV!', 'error'); return; }
-            const text = await fileInput.files[0].text();
-            const lines = text.split('\n').slice(1);
-            let count = 0;
-            for (let line of lines) {
-                const cols = line.trim().split(',');
-                if (cols.length >= 3) {
-                    await supabaseClient.from('students').upsert({ nisn: cols[0], name: cols[1], kelas: cols[2] }, { onConflict: 'nisn' });
-                    count++;
-                }
-            }
-            showModal('Berhasil', `${count} data siswa berhasil diunggah.`);
-        }
-
         async function downloadExcelCSV() {
-            const { data: results } = await supabaseClient.from('student_results').select('*, exams(title, subject)');
+            let results = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('student_results').select('*, exams(title, subject)');
+                results = data || [];
+            }
             let csv = 'NISN,Nama Siswa,Mata Pelajaran,Judul Ujian,Nilai,Waktu\n';
-            (results || []).forEach(r => { csv += `"${r.student_nisn}","${r.student_name}","${r.exams?.subject || '-'}","${r.exams?.title || '-'}","${r.score}","${r.submitted_at}"\n`; });
+            results.forEach(r => { csv += `"${r.student_nisn}","${r.student_name}","${r.exams?.subject || '-'}","${r.exams?.title || '-'}","${r.score}","${r.submitted_at}"\n`; });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'rekap_nilai_global.csv'; a.click();
-        }
-
-        async function generateNewToken() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let token = '';
-            for (let i = 0; i < 6; i++) token += chars.charAt(Math.floor(Math.random() * chars.length));
-            await supabaseClient.from('exam_tokens').insert([{ token }]);
-            activeToken = token;
-            adminTab('tokens');
-            showModal('Token Baru', `Token: ${token}`);
-        }
-
-        async function saveSettings(e) {
-            e.preventDefault();
-            currentSettings.school_name = document.getElementById('set-school').value;
-            currentSettings.headmaster_name = document.getElementById('set-kepsek').value;
-            currentSettings.headmaster_nip = document.getElementById('set-nip').value;
-            await supabaseClient.from('settings').update(currentSettings).eq('id', 1);
-            fetchSettings();
-            showModal('Berhasil', 'Pengaturan diperbarui.');
-        }
-
-        async function toggleExamActivation(id, status) {
-            await supabaseClient.from('exams').update({ is_active: status }).eq('id', id);
         }
 
         function printMinutesOfExam() {
@@ -504,7 +579,7 @@
                 <head><title>Berita Acara</title><script src="https://cdn.tailwindcss.com"></script></head>
                 <body class="p-8 font-serif text-sm">
                     <h2 class="text-center font-bold text-lg mb-4">BERITA ACARA PELAKSANAAN UJIAN<br>${currentSettings.school_name.toUpperCase()}</h2>
-                    <p>Pada hari ini telah dilaksanakan Penilaian Sumatif Akhir Semester menggunakan Token: <strong>${activeToken}</strong></p>
+                    <p>Pada hari ini telah dilaksanakan Penilaian Sumatif Akhir Semester menggunakan Token Aktif: <strong>${activeToken}</strong></p>
                     <div class="grid grid-cols-2 mt-16 text-center">
                         <div><p>Pengawas Ujian,</p><br><br><p class="underline">___________________</p></div>
                         <div><p>Kepala Sekolah,</p><br><br><p class="underline font-bold">${currentSettings.headmaster_name}</p></div>
@@ -516,20 +591,85 @@
             printWin.document.close();
         }
 
+        async function saveSettings(e) {
+            e.preventDefault();
+            currentSettings.school_name = document.getElementById('set-school').value;
+            currentSettings.headmaster_name = document.getElementById('set-kepsek').value;
+            currentSettings.headmaster_nip = document.getElementById('set-nip').value;
+            if (supabaseClient) {
+                await supabaseClient.from('settings').update(currentSettings).eq('id', 1);
+            }
+            fetchSettings();
+            showModal('Berhasil', 'Pengaturan sekolah berhasil diperbarui.');
+        }
+
+        async function openAddTeacherModal() {
+            const name = prompt("Nama Lengkap Guru dan Gelar:");
+            if (!name) return;
+            const nip = prompt("NIP Guru (Opsional):");
+            const phone = prompt("Nomor HP (WhatsApp) untuk Login:");
+            if (!phone) return;
+
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('teachers').insert([{ name, nip, phone, pin: '12345' }]);
+                if (error) { showModal('Gagal', error.message, 'error'); return; }
+            }
+            showModal('Berhasil', 'Guru berhasil ditambahkan dengan PIN default 12345.');
+            adminTab('teachers');
+        }
+
+        async function deleteTeacher(id) {
+            if (!confirm('Yakin ingin menghapus data guru ini?')) return;
+            if (supabaseClient) await supabaseClient.from('teachers').delete().eq('id', id);
+            adminTab('teachers');
+        }
+
+        async function openAddStudentModal() {
+            const nisn = prompt("NISN Siswa:");
+            if (!nisn) return;
+            const name = prompt("Nama Lengkap Siswa:");
+            if (!name) return;
+            const kelas = prompt("Kelas (Contoh: XI TKJ):");
+            if (!kelas) return;
+
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('students').insert([{ nisn, name, kelas, pin: '12345' }]);
+                if (error) { showModal('Gagal', error.message, 'error'); return; }
+            }
+            showModal('Berhasil', 'Siswa berhasil ditambahkan dengan PIN default 12345.');
+            adminTab('students');
+        }
+
+        async function deleteStudent(id) {
+            if (!confirm('Yakin ingin menghapus siswa ini?')) return;
+            if (supabaseClient) await supabaseClient.from('students').delete().eq('id', id);
+            adminTab('students');
+        }
+
+        async function toggleExamActivation(id, status) {
+            if (supabaseClient) {
+                await supabaseClient.from('exams').update({ is_active: status }).eq('id', id);
+            }
+            showModal('Status Diperbarui', `Ujian berhasil ${status ? 'diaktifkan' : 'dinonaktifkan'}.`);
+        }
+
+        // ==========================================
+        // TEACHER DASHBOARD
+        // ==========================================
         async function renderTeacherDashboard() {
             const content = document.getElementById('app-content');
-            if (!content) return;
             content.innerHTML = `
                 <div class="space-y-6">
-                    <div class="bg-slate-800 p-4 rounded-2xl flex justify-between items-center shadow">
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
                         <div>
-                            <h2 class="text-xl font-bold text-white">Dashboard Guru: ${currentUser.data.name}</h2>
-                            <p class="text-xs text-slate-400">Unggah soal ujian pilihan ganda.</p>
+                            <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Dashboard Guru Mapel</h2>
+                            <p class="text-xs text-slate-400">Selamat datang, ${currentUser.data.name} &bull; Buat dan unggah soal ujian SAS.</p>
                         </div>
-                        <button onclick="openAddExamModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow">Buat Soal Baru</button>
+                        <button onclick="openAddExamModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow"><i class="fa-solid fa-plus mr-1"></i> Buat Paket Soal Baru</button>
                     </div>
+
                     <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-2xl">
-                        <h3 class="text-sm font-bold text-white mb-3">Daftar Paket Soal Anda</h3>
+                        <h3 class="text-sm font-bold text-white mb-3">Paket Soal Anda</h3>
                         <div id="teacher-exam-list" class="space-y-3"></div>
                     </div>
                 </div>
@@ -539,17 +679,20 @@
 
         async function loadTeacherExams() {
             const listEl = document.getElementById('teacher-exam-list');
-            if (!listEl) return;
-            const { data: exams } = await supabaseClient.from('exams').select('*').eq('teacher_id', currentUser.data.id);
-            if (!exams || exams.length === 0) {
-                listEl.innerHTML = `<p class="text-xs text-slate-500">Belum ada paket soal.</p>`;
+            let exams = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('exams').select('*').eq('teacher_id', currentUser.data.id);
+                exams = data || [];
+            }
+            if (exams.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500">Anda belum membuat soal ujian. Klik tombol di atas untuk membuat.</p>`;
                 return;
             }
             listEl.innerHTML = exams.map(ex => `
-                <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex justify-between items-center text-xs text-white">
+                <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex justify-between items-center text-xs">
                     <div>
-                        <h4 class="font-bold">${ex.title} (${ex.subject})</h4>
-                        <p class="text-slate-400">Kelas: ${ex.kelas} &bull; Soal: ${ex.questions?.length || 0}</p>
+                        <h4 class="font-bold text-white text-sm">${ex.title} (${ex.subject})</h4>
+                        <p class="text-slate-400">Kelas: ${ex.kelas} &bull; Soal: ${ex.questions?.length || 0} Butir &bull; Status: <span class="${ex.is_active ? 'text-emerald-400 font-bold' : 'text-amber-400'}">${ex.is_active ? 'Aktif (Ditayang Admin)' : 'Menunggu Aktivasi Admin'}</span></p>
                     </div>
                     <button onclick="deleteExam(${ex.id})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -557,50 +700,86 @@
         }
 
         async function openAddExamModal() {
-            const title = prompt("Judul Ujian:");
+            const title = prompt("Judul Ujian (Contoh: Sumatif Akhir Semester Jaringan Komputer):");
             if (!title) return;
             const subject = prompt("Mata Pelajaran:");
             if (!subject) return;
-            const kelas = prompt("Kelas (Contoh: XI TKJ):");
+            const kelas = prompt("Target Kelas (Contoh: XI TKJ):");
             if (!kelas) return;
-            const sampleQuestions = [{ question: "Contoh Soal Pilihan Ganda?", options: ["A", "B", "C", "D", "E"], answer: 0 }];
-            await supabaseClient.from('exams').insert([{ title, subject, kelas, teacher_id: currentUser.data.id, questions: sampleQuestions, is_active: false }]);
+
+            const sampleQuestions = [
+                {
+                    question: "Perangkat jaringan yang berfungsi untuk menghubungkan dua atau lebih jaringan yang berbeda segmen disebut?",
+                    options: ["Switch", "Router", "Hub", "Repeater", "Access Point"],
+                    answer: 1
+                },
+                {
+                    question: "Berapa jumlah host usable pada subnet mask /28?",
+                    options: ["14", "30", "62", "126", "254"],
+                    answer: 0
+                }
+            ];
+
+            if (supabaseClient) {
+                await supabaseClient.from('exams').insert([{
+                    title, subject, kelas,
+                    teacher_id: currentUser.data.id,
+                    questions: sampleQuestions,
+                    is_active: false
+                }]);
+            }
             loadTeacherExams();
-            showModal('Berhasil', 'Soal berhasil diunggah.');
+            showModal('Berhasil', 'Paket soal berhasil diunggah. Mohon hubungi admin untuk mengaktifkan tayangan ujian.');
         }
 
         async function deleteExam(id) {
             if (!confirm('Hapus paket soal ini?')) return;
-            await supabaseClient.from('exams').delete().eq('id', id);
+            if (supabaseClient) await supabaseClient.from('exams').delete().eq('id', id);
             loadTeacherExams();
         }
 
+        // ==========================================
+        // STUDENT DASHBOARD & CBT EXAM RUNNER
+        // ==========================================
         async function renderStudentDashboard() {
             const content = document.getElementById('app-content');
-            if (!content) return;
-            const { data: activeExams } = await supabaseClient.from('exams').select('*').eq('is_active', true);
+            let activeExams = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('exams').select('*').eq('is_active', true);
+                activeExams = data || [];
+            }
 
             content.innerHTML = `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 rounded-2xl flex justify-between items-center shadow">
+                    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-700 p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
-                            <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">Siswa Peserta Ujian</span>
+                            <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Siswa Peserta Ujian</span>
                             <h2 class="text-xl font-bold text-white mt-1">${currentUser.data.name}</h2>
-                            <p class="text-xs text-blue-200">NISN (ID Login): ${currentUser.data.nisn} &bull; Kelas: ${currentUser.data.kelas}</p>
+                            <p class="text-xs text-blue-200">NISN: ${currentUser.data.nisn} &bull; Kelas: ${currentUser.data.kelas}</p>
                         </div>
+                        <button onclick="openChangePinModal()" class="bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-600 transition">
+                            <i class="fa-solid fa-key mr-1"></i> Ubah PIN Siswa
+                        </button>
                     </div>
+
                     <div>
-                        <h3 class="text-base font-bold text-white mb-3">Daftar Ujian Aktif</h3>
+                        <h3 class="text-base font-bold text-white mb-3 flex items-center"><i class="fa-solid fa-clipboard-list text-emerald-400 mr-2"></i>Daftar Ujian Aktif</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            ${(!activeExams || activeExams.length === 0) ? `<p class="text-xs text-slate-400">Belum ada ujian aktif yang dijadwalkan.</p>` : activeExams.map(ex => `
-                                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex flex-col justify-between shadow">
+                            ${activeExams.length === 0 ? `
+                                <div class="col-span-full bg-slate-800/50 border border-slate-700 p-6 rounded-2xl text-center text-slate-400">
+                                    <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400 mb-2"></i>
+                                    <p class="text-sm font-semibold">Belum ada jadwal ujian yang diaktifkan oleh admin.</p>
+                                    <p class="text-xs text-slate-500 mt-1">Silakan menunggu instruksi pengawas atau guru pengampu.</p>
+                                </div>
+                            ` : activeExams.map(ex => `
+                                <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between shadow hover:border-blue-500 transition">
                                     <div>
                                         <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">${ex.subject}</span>
                                         <h4 class="font-bold text-white text-base mt-2">${ex.title}</h4>
-                                        <p class="text-xs text-slate-400 mt-1">Soal: ${ex.questions?.length || 0} Butir</p>
+                                        <p class="text-xs text-slate-400 mt-1">Jumlah Soal: ${ex.questions?.length || 0} Pilihan Ganda</p>
                                     </div>
-                                    <button onclick='promptTokenAndStart(${JSON.stringify(ex).replace(/'/g, "&apos;")})' class="mt-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
-                                        <i class="fa-solid fa-play"></i> <span>Mulai Ujian (Fullscreen)</span>
+                                    <button onclick='promptTokenAndStart(${JSON.stringify(ex).replace(/'/g, "&apos;")})' class="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-play"></i> <span>Mulai Ujian SAS</span>
                                     </button>
                                 </div>
                             `).join('')}
@@ -610,6 +789,15 @@
             `;
         }
 
+        async function openChangePinModal() {
+            const newPin = prompt("Masukkan PIN Baru (angka):");
+            if (!newPin) return;
+            if (supabaseClient) {
+                await supabaseClient.from('students').update({ pin: newPin }).eq('nisn', currentUser.data.nisn);
+            }
+            showModal('Berhasil', 'PIN siswa berhasil diperbarui.');
+        }
+
         function promptTokenAndStart(exam) {
             const tokenInput = prompt("Masukkan Token Ujian (Dari Pengawas):");
             if (!tokenInput) return;
@@ -617,9 +805,6 @@
                 showModal('Token Salah', 'Token ujian tidak valid atau salah!', 'error');
                 return;
             }
-            
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) { elem.requestFullscreen().catch(() => {}); }
             startExam(exam);
         }
 
@@ -634,53 +819,58 @@
             studentAnswers = {};
             let timeLeft = (exam.questions.length * 2) * 60;
 
-            document.addEventListener('fullscreenchange', handleFullscreenExit);
-
             const content = document.getElementById('app-content');
-            if (!content) return;
             content.innerHTML = `
                 <div class="max-w-3xl mx-auto space-y-4">
-                    <div class="bg-slate-800 p-4 rounded-2xl flex justify-between items-center shadow">
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex justify-between items-center shadow">
                         <div>
-                            <h3 class="font-bold text-white text-sm">${exam.title}</h3>
-                            <p class="text-xs text-slate-400">${currentUser.data.name}</p>
+                            <h3 class="font-bold text-white text-sm sm:text-base">${exam.title}</h3>
+                            <p class="text-xs text-slate-400">${exam.subject} &bull; ${currentUser.data.name}</p>
                         </div>
-                        <div class="bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-xl text-xs font-mono font-bold" id="exam-timer">00:00:00</div>
+                        <div class="bg-rose-500/20 border border-rose-500/40 text-rose-400 px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center space-x-1.5">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="exam-timer">00:00:00</span>
+                        </div>
                     </div>
-                    <div class="bg-slate-800 p-6 rounded-2xl space-y-4 border border-slate-700 shadow-xl">
-                        <p class="text-xs text-slate-400">Soal No <span id="q-number" class="text-white font-bold">1</span> dari ${exam.questions.length}</p>
-                        <div id="question-text" class="text-sm sm:text-base font-medium text-white"></div>
-                        <div id="options-container" class="space-y-3"></div>
+
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+                        <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-700 pb-3">
+                            <span>Soal Nomor <strong id="q-number" class="text-white text-sm">1</strong> dari ${exam.questions.length}</span>
+                        </div>
+                        <div id="question-text" class="text-sm sm:text-base text-slate-100 font-medium leading-relaxed"></div>
+                        <div id="options-container" class="space-y-3 pt-2"></div>
                     </div>
-                    <div class="flex justify-between">
-                        <button onclick="prevQuestion()" id="btn-prev" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs border border-slate-700">Sebelumnya</button>
-                        <button onclick="nextQuestion()" id="btn-next" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow">Selanjutnya</button>
+
+                    <div class="flex justify-between items-center">
+                        <button onclick="prevQuestion()" id="btn-prev" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-arrow-left mr-1"></i> Sebelumnya</button>
+                        <button onclick="nextQuestion()" id="btn-next" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow">Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i></button>
                     </div>
                 </div>
             `;
+
             renderQuestion();
 
             if (examTimerInterval) clearInterval(examTimerInterval);
             examTimerInterval = setInterval(() => {
-                let h = Math.floor(timeLeft / 3600);
-                let m = Math.floor((timeLeft % 3600) / 60);
-                let s = timeLeft % 60;
-                document.getElementById('exam-timer').innerText = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-                if (timeLeft <= 0) { clearInterval(examTimerInterval); submitExam(true); }
+                let hours = Math.floor(timeLeft / 3600);
+                let minutes = Math.floor((timeLeft % 3600) / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById('exam-timer').innerText = 
+                    `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    submitExam(true);
+                }
                 timeLeft--;
             }, 1000);
-        }
-
-        function handleFullscreenExit() {
-            if (!document.fullscreenElement && activeExamSession) {
-                alert("PERINGATAN: Anda keluar dari mode Layar Penuh (Fullscreen)! Tindakan ini dicatat sebagai pelanggaran.");
-            }
         }
 
         function renderQuestion() {
             const q = activeExamSession.questions[currentQuestionIndex];
             document.getElementById('q-number').innerText = currentQuestionIndex + 1;
             document.getElementById('question-text').innerText = q.question;
+
             const optContainer = document.getElementById('options-container');
             const letters = ['A', 'B', 'C', 'D', 'E'];
             
@@ -693,50 +883,76 @@
                     </label>
                 `;
             }).join('');
+
+            document.getElementById('btn-prev').style.visibility = currentQuestionIndex === 0 ? 'hidden' : 'visible';
+            const nextBtn = document.getElementById('btn-next');
+            if (currentQuestionIndex === activeExamSession.questions.length - 1) {
+                nextBtn.innerHTML = `Selesai & Kumpulkan <i class="fa-solid fa-check ml-1"></i>`;
+                nextBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow";
+            } else {
+                nextBtn.innerHTML = `Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i>`;
+                nextBtn.className = "bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow";
+            }
         }
 
-        function selectAnswer(idx) { studentAnswers[currentQuestionIndex] = idx; renderQuestion(); }
-        function prevQuestion() { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } }
+        function selectAnswer(idx) {
+            studentAnswers[currentQuestionIndex] = idx;
+            renderQuestion();
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
         function nextQuestion() {
             if (currentQuestionIndex < activeExamSession.questions.length - 1) {
-                currentQuestionIndex++; renderQuestion();
+                currentQuestionIndex++;
+                renderQuestion();
             } else {
-                if (confirm('Selesaikan ujian dan kumpulkan jawaban?')) submitExam(false);
+                if (confirm('Apakah Anda yakin ingin menyelesaikan ujian dan mengirimkan jawaban?')) {
+                    submitExam(false);
+                }
             }
         }
 
         async function submitExam(isTimeout) {
             clearInterval(examTimerInterval);
-            document.removeEventListener('fullscreenchange', handleFullscreenExit);
-            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-
-            let correct = 0;
+            let correctCount = 0;
             const total = activeExamSession.questions.length;
-            activeExamSession.questions.forEach((q, idx) => { if (studentAnswers[idx] === q.answer) correct++; });
-            const score = (correct / total) * 100;
 
-            await supabaseClient.from('student_results').insert([{
-                student_nisn: currentUser.data.nisn,
-                student_name: currentUser.data.name,
-                exam_id: activeExamSession.id,
-                score,
-                answers: studentAnswers
-            }]);
+            activeExamSession.questions.forEach((q, idx) => {
+                if (studentAnswers[idx] === q.answer) correctCount++;
+            });
+
+            const score = (correctCount / total) * 100;
+
+            if (supabaseClient) {
+                await supabaseClient.from('student_results').insert([{
+                    student_nisn: currentUser.data.nisn,
+                    student_name: currentUser.data.name,
+                    exam_id: activeExamSession.id,
+                    score,
+                    answers: studentAnswers
+                }]);
+            }
 
             const content = document.getElementById('app-content');
-            if (!content) return;
             content.innerHTML = `
-                <div class="max-w-md mx-auto my-auto bg-slate-800 p-8 rounded-2xl text-center space-y-4 shadow-2xl border border-slate-700">
+                <div class="max-w-md mx-auto my-auto bg-slate-800 border border-slate-700 p-8 rounded-2xl text-center space-y-4 shadow-2xl">
                     <div class="inline-flex p-4 bg-emerald-500/20 text-emerald-400 text-4xl rounded-3xl mb-1">
                         <i class="fa-solid fa-award"></i>
                     </div>
-                    <h2 class="text-xl font-bold text-white">${isTimeout ? 'Waktu Habis!' : 'Ujian Selesai'}</h2>
+                    <h2 class="text-xl font-bold text-white">${isTimeout ? 'Waktu Ujian Habis!' : 'Ujian Telah Diselesaikan'}</h2>
+                    <p class="text-xs text-slate-400">Terima kasih telah mengikuti Penilaian Sumatif Akhir Semester SMKN 1 Wakatobi.</p>
                     <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl">
                         <span class="text-xs text-slate-400">Nilai Akhir Anda</span>
                         <div class="text-3xl font-extrabold text-emerald-400 mt-1">${score.toFixed(1)}</div>
-                        <span class="text-[10px] text-slate-500">Benar: ${correct} dari ${total} soal</span>
+                        <span class="text-[10px] text-slate-500">Benar: ${correctCount} dari ${total} soal</span>
                     </div>
-                    <button onclick="renderStudentDashboard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition">Kembali ke Beranda</button>
+                    <button onclick="renderStudentDashboard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition">Kembali ke Beranda Siswa</button>
                 </div>
             `;
         }
