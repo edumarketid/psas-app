@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBT Penilaian Sumatif Akhir Semester - SMKN 1 Wakatobi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .device-frame-mobile {
+            max-width: 414px;
+            height: 844px;
+            margin: 0 auto;
+            border: 12px solid #1f2937;
+            border-radius: 40px;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .device-frame-desktop {
+            max-width: 100%;
+            height: 100vh;
+            border: none;
+            border-radius: 0;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased flex flex-col h-screen overflow-hidden">
+
+    <!-- Top Bar Pengaturan Tampilan & Koneksi -->
+    <header class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex justify-between items-center text-xs z-50">
+        <div class="flex items-center space-x-2">
+            <span class="inline-block w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></span>
+            <span class="font-semibold text-emerald-400">CBT SMKN 1 Wakatobi PWA</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="text-slate-400 hidden sm:inline">Ubah Tampilan Perangkat:</span>
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+                <button onclick="setDeviceMode('mobile')" id="btn-mobile" class="px-3 py-1.5 text-xs font-medium bg-slate-700 text-white rounded-l-lg hover:bg-slate-600 border border-slate-600 transition">
+                    <i class="fa-solid fa-mobile-screen mr-1"></i> HP
+                </button>
+                <button onclick="setDeviceMode('desktop')" id="btn-desktop" class="px-3 py-1.5 text-xs font-medium bg-slate-900 text-slate-300 rounded-r-lg hover:bg-slate-700 border border-slate-600 transition">
+                    <i class="fa-solid fa-desktop mr-1"></i> Desktop
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container dengan Dynamic Device Wrapper -->
+    <main class="flex-1 flex justify-center items-center bg-slate-950 p-0 sm:p-4 overflow-hidden">
+        <div id="device-container" class="device-frame-desktop w-full bg-slate-900 flex flex-col transition-all duration-300 relative shadow-2xl">
+            
+            <!-- App Header (Branding SMKN 1 Wakatobi) -->
+            <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white p-4 border-b border-indigo-800 flex justify-between items-center shadow-md">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-blue-600 p-2.5 rounded-xl shadow">
+                        <i class="fa-solid fa-graduation-cap text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-sm sm:text-base tracking-wide" id="lbl-school-name">SMKN 1 Wakatobi</h1>
+                        <p class="text-xs text-blue-200" id="lbl-semester-info">Penilaian Sumatif Akhir Semester (SAS)</p>
+                    </div>
+                </div>
+                <div id="header-auth-status">
+                    <!-- Dynamic Auth Status / Logout Button -->
+                </div>
+            </div>
+
+            <!-- App Body Content Area -->
+            <div id="app-content" class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-900">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <!-- Footer -->
+            <footer class="bg-slate-900 border-t border-slate-800 py-2 text-center text-xs text-slate-500">
+                &copy; 2026 Tim Kurikulum SMKN 1 Wakatobi &bull; Supabase Backend Connected
+            </footer>
+
+        </div>
+    </main>
+
+    <!-- Modal Notifikasi / Alert Global -->
+    <div id="global-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl">
+            <div id="modal-icon" class="text-4xl mb-3 text-emerald-400">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3 id="modal-title" class="text-lg font-bold text-white mb-1">Berhasil</h3>
+            <p id="modal-message" class="text-sm text-slate-300 mb-6">Pesan informasi sistem.</p>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg">OK</button>
+        </div>
+    </div>
+
+    <!-- Script Logika Aplikasi -->
+    <script>
+        // ==========================================
+        // KONFIGURASI SUPABASE (Ganti dengan kredensial Anda)
+        // ==========================================
+        const SUPABASE_URL = 'https://xtsvuydmdyirsnzrrzmt.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0c3Z1eWRtZHlpcnNuenJyem10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNzA3MjYsImV4cCI6MjEwODc0NjcyNn0.ilTHrt7MYhzhIuctiWedrV8neh1TCS_hIrehmEqSWsI';
+        
+        // Inisialisasi Klien Supabase (jika kredensial belum diisi, fallback ke mode lokal/demo)
+        let supabaseClient = null;
+        try {
+            if (SUPABASE_URL !== 'https://YOUR_PROJECT_REF.supabase.co') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch (e) {
+            console.warn("Supabase belum dikonfigurasi dengan benar, menggunakan state memori lokal.");
+        }
+
+        // State Aplikasi
+        let currentUser = null; // { role: 'admin'|'teacher'|'student', data: {...} }
+        let currentSettings = { school_name: 'SMKN 1 Wakatobi', headmaster_name: 'Drs. La Ode...', headmaster_nip: '1968...', academic_year: '2026/2027', semester: 'Ganjil' };
+
+        // Toggle Tampilan Perangkat (HP / Desktop)
+        function setDeviceMode(mode) {
+            const container = document.getElementById('device-container');
+            const btnMobile = document.getElementById('btn-mobile');
+            const btnDesktop = document.getElementById('btn-desktop');
+
+            if (mode === 'mobile') {
+                container.className = "device-frame-mobile w-full bg-slate-900 flex flex-col transition-all duration-300 relative shadow-2xl";
+                btnMobile.className = "px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-l-lg border border-blue-500";
+                btnDesktop.className = "px-3 py-1.5 text-xs font-medium bg-slate-900 text-slate-300 rounded-r-lg hover:bg-slate-700 border border-slate-600";
+            } else {
+                container.className = "device-frame-desktop w-full bg-slate-900 flex flex-col transition-all duration-300 relative shadow-2xl";
+                btnDesktop.className = "px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-r-lg border border-blue-500";
+                btnMobile.className = "px-3 py-1.5 text-xs font-medium bg-slate-900 text-slate-300 rounded-l-lg hover:bg-slate-700 border border-slate-600";
+            }
+        }
+
+        function showModal(title, message, type = 'success') {
+            const modal = document.getElementById('global-modal');
+            const titleEl = document.getElementById('modal-title');
+            const msgEl = document.getElementById('modal-message');
+            const iconEl = document.getElementById('modal-icon');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+            if (type === 'error') {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-500"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('global-modal').classList.add('hidden');
+        }
+
+        // Inisialisasi Awal Saat Halaman Dimuat
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchSettings();
+            renderHomeOrDashboard();
+        });
+
+        async function fetchSettings() {
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('settings').select('*').eq('id', 1).single();
+                if (data) currentSettings = data;
+            }
+            document.getElementById('lbl-school-name').innerText = currentSettings.school_name;
+            document.getElementById('lbl-semester-info').innerText = `SAS TA ${currentSettings.academic_year} (${currentSettings.semester})`;
+        }
+
+        function renderAuthStatus() {
+            const statusDiv = document.getElementById('header-auth-status');
+            if (!currentUser) {
+                statusDiv.innerHTML = `<span class="text-xs text-slate-400">Belum Login</span>`;
+            } else {
+                statusDiv.innerHTML = `
+                    <button onclick="logout()" class="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1 rounded-lg text-xs font-medium transition flex items-center space-x-1">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span>Keluar</span>
+                    </button>
+                `;
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            renderHomeOrDashboard();
+            showModal('Logout Berhasil', 'Anda telah keluar dari sistem.');
+        }
+
+        // ==========================================
+        // RENDER HALAMAN UTAMA / LOGIN PILIHAN
+        // ==========================================
+        function renderHomeOrDashboard() {
+            renderAuthStatus();
+            const content = document.getElementById('app-content');
+
+            if (!currentUser) {
+                content.innerHTML = `
+                    <div class="max-w-md mx-auto space-y-6 my-auto pt-6">
+                        <div class="text-center space-y-2">
+                            <div class="inline-flex p-4 bg-blue-600/20 border border-blue-500/30 rounded-3xl text-blue-400 text-3xl mb-2">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">Portal Ujian Sumatif</h2>
+                            <p class="text-sm text-slate-400">Pilih akses masuk sesuai peran Anda di SMKN 1 Wakatobi</p>
+                        </div>
+
+                        <!-- Tab Selector -->
+                        <div class="flex rounded-xl bg-slate-800 p-1.5 border border-slate-700">
+                            <button onclick="switchLoginTab('student')" id="tab-student" class="flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow">Siswa</button>
+                            <button onclick="switchLoginTab('teacher')" id="tab-teacher" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Guru</button>
+                            <button onclick="switchLoginTab('admin')" id="tab-admin" class="flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition">Admin</button>
+                        </div>
+
+                        <!-- Form Login Container -->
+                        <div id="login-form-container" class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                            <!-- Rendered by switchLoginTab -->
+                        </div>
+                    </div>
+                `;
+                switchLoginTab('student');
+            } else {
+                if (currentUser.role === 'admin') renderAdminDashboard();
+                else if (currentUser.role === 'teacher') renderTeacherDashboard();
+                else if (currentUser.role === 'student') renderStudentDashboard();
+            }
+        }
+
+        function switchLoginTab(role) {
+            ['student', 'teacher', 'admin'].forEach(r => {
+                const btn = document.getElementById(`tab-${r}`);
+                if (r === role) {
+                    btn.className = "flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow";
+                } else {
+                    btn.className = "flex-1 py-2 text-xs font-bold rounded-lg text-slate-400 hover:text-white transition";
+                }
+            });
+
+            const container = document.getElementById('login-form-container');
+            if (role === 'student') {
+                container.innerHTML = `
+                    <form onsubmit="handleLogin(event, 'student')" class="space-y-4">
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Login Siswa</h3>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Induk Siswa Nasional (NISN)</label>
+                            <input type="text" id="login-nisn" required placeholder="Contoh: 0081234567" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">PIN Siswa (Default: 12345)</label>
+                            <input type="password" id="login-pin" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Ujian</button>
+                    </form>
+                `;
+            } else if (role === 'teacher') {
+                container.innerHTML = `
+                    <form onsubmit="handleLogin(event, 'teacher')" class="space-y-4">
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Login Guru Mapel</h3>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Handphone (WhatsApp)</label>
+                            <input type="text" id="login-phone" required placeholder="Contoh: 081234567890" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">PIN Guru (Default: 12345)</label>
+                            <input type="password" id="login-tpin" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Dashboard Guru</button>
+                    </form>
+                `;
+            } else if (role === 'admin') {
+                container.innerHTML = `
+                    <form onsubmit="handleLogin(event, 'admin')" class="space-y-4">
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-shield text-amber-400 mr-2"></i>Login Administrator</h3>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Username Admin</label>
+                            <input type="text" id="login-admin-user" required value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Password (Default: 12345)</label>
+                            <input type="password" id="login-admin-pass" required placeholder="•••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl transition shadow-lg text-sm">Masuk Panel Admin</button>
+                    </form>
+                `;
+            }
+        }
+
+        async function handleLogin(e, role) {
+            e.preventDefault();
+            if (role === 'admin') {
+                const u = document.getElementById('login-admin-user').value;
+                const p = document.getElementById('login-admin-pass').value;
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('admins').select('*').eq('username', u).eq('password', p).single();
+                    if (data) {
+                        currentUser = { role: 'admin', data };
+                    } else {
+                        showModal('Login Gagal', 'Username atau password admin salah!', 'error');
+                        return;
+                    }
+                } else {
+                    if (u === 'admin' && p === '12345') currentUser = { role: 'admin', data: { username: 'admin' } };
+                    else { showModal('Login Gagal', 'Username/Password salah', 'error'); return; }
+                }
+            } else if (role === 'teacher') {
+                const phone = document.getElementById('login-phone').value;
+                const pin = document.getElementById('login-tpin').value;
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('teachers').select('*').eq('phone', phone).eq('pin', pin).single();
+                    if (data) currentUser = { role: 'teacher', data };
+                    else { showModal('Login Gagal', 'No HP atau PIN Guru tidak terdaftar!', 'error'); return; }
+                } else {
+                    currentUser = { role: 'teacher', data: { id: 1, name: 'Guru Demo', phone } };
+                }
+            } else if (role === 'student') {
+                const nisn = document.getElementById('login-nisn').value;
+                const pin = document.getElementById('login-pin').value;
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('students').select('*').eq('nisn', nisn).eq('pin', pin).single();
+                    if (data) currentUser = { role: 'student', data };
+                    else { showModal('Login Gagal', 'NISN atau PIN Siswa salah/tidak ditemukan!', 'error'); return; }
+                } else {
+                    currentUser = { role: 'student', data: { nisn, name: 'Siswa Demo', kelas: 'XI TKJ' } };
+                }
+            }
+            renderHomeOrDashboard();
+            showModal('Login Berhasil', `Selamat datang, ${currentUser.data.name || currentUser.data.username || 'Pengguna'}`);
+        }
+
+        // ==========================================
+        // ADMIN DASHBOARD
+        // ==========================================
+        async function renderAdminDashboard() {
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center"><i class="fa-solid fa-gauge text-amber-400 mr-2"></i>Panel Administrator</h2>
+                            <p class="text-xs text-slate-400">Kelola kurikulum, data guru, siswa, jadwal ujian, dan aktivasi soal.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="adminTab('settings')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-xl font-medium transition"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
+                            <button onclick="adminTab('teachers')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-xl font-medium transition"><i class="fa-solid fa-chalkboard-user mr-1"></i> Data Guru</button>
+                            <button onclick="adminTab('students')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs rounded-xl font-medium transition"><i class="fa-solid fa-user-graduate mr-1"></i> Data Siswa</button>
+                            <button onclick="adminTab('exams')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs rounded-xl font-medium transition"><i class="fa-solid fa-file-shield mr-1"></i> Aktivasi & Jadwal Soal</button>
+                        </div>
+                    </div>
+                    <div id="admin-content-area" class="bg-slate-800/50 border border-slate-700 rounded-2xl p-4 sm:p-6">
+                        <!-- Default tab: Exams & Activation -->
+                    </div>
+                </div>
+            `;
+            adminTab('exams');
+        }
+
+        async function adminTab(tab) {
+            const area = document.getElementById('admin-content-area');
+            if (tab === 'settings') {
+                area.innerHTML = `
+                    <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-school text-blue-400 mr-2"></i>Pengaturan Identitas Sekolah & Tahun Ajaran</h3>
+                    <form onsubmit="saveSettings(event)" class="space-y-4 max-w-xl">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nama Sekolah</label>
+                            <input type="text" id="set-school" value="${currentSettings.school_name || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Nama Kepala Sekolah</label>
+                                <input type="text" id="set-kepsek" value="${currentSettings.headmaster_name || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">NIP Kepala Sekolah</label>
+                                <input type="text" id="set-nip" value="${currentSettings.headmaster_nip || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Tahun Ajaran</label>
+                                <input type="text" id="set-year" value="${currentSettings.academic_year || ''}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-300 mb-1">Semester</label>
+                                <select id="set-semester" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white">
+                                    <option value="Ganjil" ${currentSettings.semester === 'Ganjil' ? 'selected' : ''}>Ganjil</option>
+                                    <option value="Genap" ${currentSettings.semester === 'Genap' ? 'selected' : ''}>Genap</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm transition">Simpan Pengaturan</button>
+                    </form>
+                `;
+            } else if (tab === 'teachers') {
+                let teachers = [];
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('teachers').select('*');
+                    teachers = data || [];
+                }
+                area.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Manajemen Data Guru (Login No HP & PIN)</h3>
+                        <button onclick="openAddTeacherModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl"><i class="fa-solid fa-plus mr-1"></i> Tambah Guru</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-900 text-slate-400 uppercase">
+                                <tr>
+                                    <th class="p-3">Nama Guru</th>
+                                    <th class="p-3">NIP</th>
+                                    <th class="p-3">No HP (WhatsApp)</th>
+                                    <th class="p-3">PIN Default</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700">
+                                ${teachers.length === dataIsEmpty() ? `<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada data guru.</td></tr>` : teachers.map(t => `
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">${t.name}</td>
+                                        <td class="p-3">${t.nip || '-'}</td>
+                                        <td class="p-3">${t.phone}</td>
+                                        <td class="p-3 font-mono">${t.pin}</td>
+                                        <td class="p-3 text-center">
+                                            <button onclick="deleteTeacher(${t.id})" class="text-rose-400 hover:text-rose-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (tab === 'students') {
+                let students = [];
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('students').select('*').limit(50);
+                    students = data || [];
+                }
+                area.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Data Siswa Peserta Ujian</h3>
+                        <button onclick="openAddStudentModal()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-xl"><i class="fa-solid fa-plus mr-1"></i> Tambah Siswa</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-900 text-slate-400 uppercase">
+                                <tr>
+                                    <th class="p-3">NISN</th>
+                                    <th class="p-3">Nama Siswa</th>
+                                    <th class="p-3">Kelas</th>
+                                    <th class="p-3">PIN</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-700">
+                                ${students.map(s => `
+                                    <tr>
+                                        <td class="p-3 font-mono">${s.nisn}</td>
+                                        <td class="p-3 font-semibold text-white">${s.name}</td>
+                                        <td class="p-3">${s.kelas}</td>
+                                        <td class="p-3 font-mono">${s.pin}</td>
+                                        <td class="p-3 text-center">
+                                            <button onclick="deleteStudent(${s.id})" class="text-rose-400 hover:text-rose-300 px-2 py-1"><i class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if (tab === 'exams') {
+                let exams = [];
+                if (supabaseClient) {
+                    const { data } = await supabaseClient.from('exams').select('*, teachers(name)');
+                    exams = data || [];
+                }
+                area.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-shield text-amber-400 mr-2"></i>Aktivasi Soal Ujian & Jadwal Beranda</h3>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-4">Guru mengunggah soal, admin mengaktifkan soal dan menjadwalkannya agar tampil di beranda siswa.</p>
+                    <div class="space-y-3">
+                        ${exams.length === 0 ? `<p class="text-xs text-slate-500">Belum ada paket soal yang diunggah oleh guru.</p>` : exams.map(ex => `
+                            <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div>
+                                    <h4 class="font-bold text-white text-sm">${ex.title} (${ex.subject})</h4>
+                                    <p class="text-xs text-slate-400">Kelas: <span class="text-blue-400">${ex.kelas}</span> &bull; Pembuat: ${ex.teachers?.name || 'Guru'} &bull; Jumlah Soal: ${ex.questions?.length || 0} Soal</p>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" ${ex.is_active ? 'checked' : ''} onchange="toggleExamActivation(${ex.id}, this.checked)" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                    </label>
+                                    <span class="text-xs font-semibold ${ex.is_active ? 'text-emerald-400' : 'text-slate-400'}">${ex.is_active ? 'Aktif' : 'Non-Aktif'}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        }
+
+        function dataIsEmpty() { return 0; }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            currentSettings.school_name = document.getElementById('set-school').value;
+            currentSettings.headmaster_name = document.getElementById('set-kepsek').value;
+            currentSettings.headmaster_nip = document.getElementById('set-nip').value;
+            currentSettings.academic_year = document.getElementById('set-year').value;
+            currentSettings.semester = document.getElementById('set-semester').value;
+
+            if (supabaseClient) {
+                await supabaseClient.from('settings').update(currentSettings).eq('id', 1);
+            }
+            fetchSettings();
+            showModal('Berhasil', 'Pengaturan sekolah berhasil diperbarui.');
+        }
+
+        async function openAddTeacherModal() {
+            const name = prompt("Nama Lengkap Guru dan Gelar:");
+            if (!name) return;
+            const nip = prompt("NIP Guru (Opsional):");
+            const phone = prompt("Nomor HP (WhatsApp) untuk Login:");
+            if (!phone) return;
+
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('teachers').insert([{ name, nip, phone, pin: '12345' }]);
+                if (error) { showModal('Gagal', error.message, 'error'); return; }
+            }
+            showModal('Berhasil', 'Guru berhasil ditambahkan dengan PIN default 12345.');
+            adminTab('teachers');
+        }
+
+        async function deleteTeacher(id) {
+            if (!confirm('Yakin ingin menghapus data guru ini?')) return;
+            if (supabaseClient) await supabaseClient.from('teachers').delete().eq('id', id);
+            adminTab('teachers');
+        }
+
+        async function openAddStudentModal() {
+            const nisn = prompt("NISN Siswa:");
+            if (!nisn) return;
+            const name = prompt("Nama Lengkap Siswa:");
+            if (!name) return;
+            const kelas = prompt("Kelas (Contoh: XI TKJ):");
+            if (!kelas) return;
+
+            if (supabaseClient) {
+                const { error } = await supabaseClient.from('students').insert([{ nisn, name, kelas, pin: '12345' }]);
+                if (error) { showModal('Gagal', error.message, 'error'); return; }
+            }
+            showModal('Berhasil', 'Siswa berhasil ditambahkan dengan PIN default 12345.');
+            adminTab('students');
+        }
+
+        async function deleteStudent(id) {
+            if (!confirm('Yakin ingin menghapus siswa ini?')) return;
+            if (supabaseClient) await supabaseClient.from('students').delete().eq('id', id);
+            adminTab('students');
+        }
+
+        async function toggleExamActivation(id, status) {
+            if (supabaseClient) {
+                await supabaseClient.from('exams').update({ is_active: status }).eq('id', id);
+            }
+            showModal('Status Diperbarui', `Ujian berhasil ${status ? 'diaktifkan' : 'dinonaktifkan'}.`);
+        }
+
+        // ==========================================
+        // TEACHER DASHBOARD
+        // ==========================================
+        async function renderTeacherDashboard() {
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-white"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Dashboard Guru Mapel</h2>
+                            <p class="text-xs text-slate-400">Selamat datang, ${currentUser.data.name} &bull; Buat dan unggah soal ujian SAS.</p>
+                        </div>
+                        <button onclick="openAddExamModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow"><i class="fa-solid fa-plus mr-1"></i> Buat Paket Soal Baru</button>
+                    </div>
+
+                    <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-2xl">
+                        <h3 class="text-sm font-bold text-white mb-3">Paket Soal Anda</h3>
+                        <div id="teacher-exam-list" class="space-y-3">
+                            <!-- Loaded via async -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            loadTeacherExams();
+        }
+
+        async function loadTeacherExams() {
+            const listEl = document.getElementById('teacher-exam-list');
+            let exams = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('exams').select('*').eq('teacher_id', currentUser.data.id);
+                exams = data || [];
+            }
+            if (exams.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-slate-500">Anda belum membuat soal ujian. Klik tombol di atas untuk membuat.</p>`;
+                return;
+            }
+            listEl.innerHTML = exams.map(ex => `
+                <div class="bg-slate-900 border border-slate-700 p-3 rounded-xl flex justify-between items-center text-xs">
+                    <div>
+                        <h4 class="font-bold text-white text-sm">${ex.title} (${ex.subject})</h4>
+                        <p class="text-slate-400">Kelas: ${ex.kelas} &bull; Soal: ${ex.questions?.length || 0} Butir &bull; Status: <span class="${ex.is_active ? 'text-emerald-400 font-bold' : 'text-amber-400'}">${ex.is_active ? 'Aktif (Ditayang Admin)' : 'Menunggu Aktivasi Admin'}</span></p>
+                    </div>
+                    <button onclick="deleteExam(${ex.id})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+
+        async function openAddExamModal() {
+            const title = prompt("Judul Ujian (Contoh: Sumatif Akhir Semester Jaringan Komputer):");
+            if (!title) return;
+            const subject = prompt("Mata Pelajaran:");
+            if (!subject) return;
+            const kelas = prompt("Target Kelas (Contoh: XI TKJ):");
+            if (!kelas) return;
+
+            // Sample default question format
+            const sampleQuestions = [
+                {
+                    question: "Perangkat jaringan yang berfungsi untuk menghubungkan dua atau lebih jaringan yang berbeda segmen disebut?",
+                    options: ["Switch", "Router", "Hub", "Repeater", "Access Point"],
+                    answer: 1
+                },
+                {
+                    question: "Berapa jumlah host usable pada subnet mask /28?",
+                    options: ["14", "30", "62", "126", "254"],
+                    answer: 0
+                }
+            ];
+
+            if (supabaseClient) {
+                await supabaseClient.from('exams').insert([{
+                    title, subject, kelas,
+                    teacher_id: currentUser.data.id,
+                    questions: sampleQuestions,
+                    is_active: false
+                }]);
+            }
+            loadTeacherExams();
+            showModal('Berhasil', 'Paket soal berhasil diunggah. Mohon hubungi admin untuk mengaktifkan tayangan ujian.');
+        }
+
+        async function deleteExam(id) {
+            if (!confirm('Hapus paket soal ini?')) return;
+            if (supabaseClient) await supabaseClient.from('exams').delete().eq('id', id);
+            loadTeacherExams();
+        }
+
+        // ==========================================
+        // STUDENT DASHBOARD & CBT EXAM RUNNER
+        // ==========================================
+        async function renderStudentDashboard() {
+            const content = document.getElementById('app-content');
+            let activeExams = [];
+            if (supabaseClient) {
+                const { data } = await supabaseClient.from('exams').select('*').eq('is_active', true);
+                activeExams = data || [];
+            }
+
+            content.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-900 to-indigo-900 border border-blue-700 p-5 rounded-2xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <span class="bg-blue-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">Siswa Peserta Ujian</span>
+                            <h2 class="text-xl font-bold text-white mt-1">${currentUser.data.name}</h2>
+                            <p class="text-xs text-blue-200">NISN: ${currentUser.data.nisn} &bull; Kelas: ${currentUser.data.kelas}</p>
+                        </div>
+                        <button onclick="openChangePinModal()" class="bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-600 transition">
+                            <i class="fa-solid fa-key mr-1"></i> Ubah PIN Siswa
+                        </button>
+                    </div>
+
+                    <div>
+                        <h3 class="text-base font-bold text-white mb-3 flex items-center"><i class="fa-solid fa-clipboard-list text-emerald-400 mr-2"></i>Daftar Ujian Aktif</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${activeExams.length === 0 ? `
+                                <div class="col-span-full bg-slate-800/50 border border-slate-700 p-6 rounded-2xl text-center text-slate-400">
+                                    <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400 mb-2"></i>
+                                    <p class="text-sm font-semibold">Belum ada jadwal ujian yang diaktifkan oleh admin.</p>
+                                    <p class="text-xs text-slate-500 mt-1">Silakan menunggu instruksi pengawas atau guru pengampu.</p>
+                                </div>
+                            ` : activeExams.map(ex => `
+                                <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between shadow hover:border-blue-500 transition">
+                                    <div>
+                                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">${ex.subject}</span>
+                                        <h4 class="font-bold text-white text-base mt-2">${ex.title}</h4>
+                                        <p class="text-xs text-slate-400 mt-1">Jumlah Soal: ${ex.questions?.length || 0} Pilihan Ganda</p>
+                                    </div>
+                                    <button onclick='startExam(${JSON.stringify(ex).replace(/'/g, "&apos;")})' class="mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
+                                        <i class="fa-solid fa-play"></i> <span>Mulai Ujian SAS</span>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function openChangePinModal() {
+            const newPin = prompt("Masukkan PIN Baru (angka):");
+            if (!newPin) return;
+            if (supabaseClient) {
+                await supabaseClient.from('students').update({ pin: newPin }).eq('nisn', currentUser.data.nisn);
+            }
+            showModal('Berhasil', 'PIN siswa berhasil diperbarui.');
+        }
+
+        // CBT Exam Execution Engine
+        let activeExamSession = null;
+        let currentQuestionIndex = 0;
+        let studentAnswers = {};
+        let examTimerInterval = null;
+
+        function startExam(exam) {
+            activeExamSession = exam;
+            currentQuestionIndex = 0;
+            studentAnswers = {};
+            let timeLeft = (exam.questions.length * 2) * 60; // 2 menit per soal
+
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                <div class="max-w-3xl mx-auto space-y-4">
+                    <!-- Exam Header & Timer -->
+                    <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex justify-between items-center shadow">
+                        <div>
+                            <h3 class="font-bold text-white text-sm sm:text-base">${exam.title}</h3>
+                            <p class="text-xs text-slate-400">${exam.subject} &bull; ${currentUser.data.name}</p>
+                        </div>
+                        <div class="bg-rose-500/20 border border-rose-500/40 text-rose-400 px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center space-x-1.5">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="exam-timer">00:00:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Card -->
+                    <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl space-y-4">
+                        <div class="flex justify-between items-center text-xs text-slate-400 border-b border-slate-700 pb-3">
+                            <span>Soal Nomor <strong id="q-number" class="text-white text-sm">1</strong> dari ${exam.questions.length}</span>
+                            <span id="answered-status" class="text-blue-400 font-semibold">Belum dijawab</span>
+                        </div>
+                        <div id="question-text" class="text-sm sm:text-base text-slate-100 font-medium leading-relaxed">
+                            <!-- Pertanyaan -->
+                        </div>
+                        <div id="options-container" class="space-y-3 pt-2">
+                            <!-- Opsi Pilihan Ganda -->
+                        </div>
+                    </div>
+
+                    <!-- Navigation Footer -->
+                    <div class="flex justify-between items-center">
+                        <button onclick="prevQuestion()" id="btn-prev" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-xl text-xs font-semibold border border-slate-700 transition"><i class="fa-solid fa-arrow-left mr-1"></i> Sebelumnya</button>
+                        <button onclick="nextQuestion()" id="btn-next" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow">Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                    </div>
+                </div>
+            `;
+
+            renderQuestion();
+
+            // Timer countdown
+            if (examTimerInterval) clearInterval(examTimerInterval);
+            examTimerInterval = setInterval(() => {
+                let hours = Math.floor(timeLeft / 3600);
+                let minutes = Math.floor((timeLeft % 3600) / 60);
+                let seconds = timeLeft % 60;
+                document.getElementById('exam-timer').innerText = 
+                    `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    submitExam(true);
+                }
+                timeLeft--;
+            }, 1000);
+        }
+
+        function renderQuestion() {
+            const q = activeExamSession.questions[currentQuestionIndex];
+            document.getElementById('q-number').innerText = currentQuestionIndex + 1;
+            document.getElementById('question-text').innerText = q.question;
+
+            const optContainer = document.getElementById('options-container');
+            const letters = ['A', 'B', 'C', 'D', 'E'];
+            
+            optContainer.innerHTML = q.options.map((opt, idx) => {
+                const isSelected = studentAnswers[currentQuestionIndex] === idx;
+                return `
+                    <label onclick="selectAnswer(${idx})" class="flex items-center space-x-3 p-3.5 rounded-xl border cursor-pointer transition ${isSelected ? 'bg-blue-600/20 border-blue-500 text-white' : 'bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-700/50'}">
+                        <span class="w-7 h-7 rounded-lg ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'} flex items-center justify-center font-bold text-xs">${letters[idx]}</span>
+                        <span class="text-sm flex-1">${opt}</span>
+                    </label>
+                `;
+            }).join('');
+
+            document.getElementById('btn-prev').style.visibility = currentQuestionIndex === 0 ? 'hidden' : 'visible';
+            const nextBtn = document.getElementById('btn-next');
+            if (currentQuestionIndex === activeExamSession.questions.length - 1) {
+                nextBtn.innerHTML = `Selesai & Kumpulkan <i class="fa-solid fa-check ml-1"></i>`;
+                nextBtn.className = "bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow";
+            } else {
+                nextBtn.innerHTML = `Selanjutnya <i class="fa-solid fa-arrow-right ml-1"></i>`;
+                nextBtn.className = "bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-xs font-semibold transition shadow";
+            }
+        }
+
+        function selectAnswer(idx) {
+            studentAnswers[currentQuestionIndex] = idx;
+            renderQuestion();
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                renderQuestion();
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < activeExamSession.questions.length - 1) {
+                currentQuestionIndex++;
+                renderQuestion();
+            } else {
+                if (confirm('Apakah Anda yakin ingin menyelesaikan ujian dan mengirimkan jawaban?')) {
+                    submitExam(false);
+                }
+            }
+        }
+
+        async function submitExam(isTimeout) {
+            clearInterval(examTimerInterval);
+            let correctCount = 0;
+            const total = activeExamSession.questions.length;
+
+            activeExamSession.questions.forEach((q, idx) => {
+                if (studentAnswers[idx] === q.answer) correctCount++;
+            });
+
+            const score = (correctCount / total) * 100;
+
+            if (supabaseClient) {
+                await supabaseClient.from('student_results').insert([{
+                    student_nisn: currentUser.data.nisn,
+                    student_name: currentUser.data.name,
+                    exam_id: activeExamSession.id,
+                    score,
+                    answers: studentAnswers
+                }]);
+            }
+
+            const content = document.getElementById('app-content');
+            content.innerHTML = `
+                <div class="max-w-md mx-auto my-auto bg-slate-800 border border-slate-700 p-8 rounded-2xl text-center space-y-4 shadow-2xl">
+                    <div class="inline-flex p-4 bg-emerald-500/20 text-emerald-400 text-4xl rounded-3xl mb-1">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h2 class="text-xl font-bold text-white">${isTimeout ? 'Waktu Ujian Habis!' : 'Ujian Telah Diselesaikan'}</h2>
+                    <p class="text-xs text-slate-400">Terima kasih telah mengikuti Penilaian Sumatif Akhir Semester SMKN 1 Wakatobi.</p>
+                    <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl">
+                        <span class="text-xs text-slate-400">Nilai Akhir Anda</span>
+                        <div class="text-3xl font-extrabold text-emerald-400 mt-1">${score.toFixed(1)}</div>
+                        <span class="text-[10px] text-slate-500">Benar: ${correctCount} dari ${total} soal</span>
+                    </div>
+                    <button onclick="renderStudentDashboard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-xs transition">Kembali ke Beranda Siswa</button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
