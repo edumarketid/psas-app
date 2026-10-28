@@ -30,7 +30,7 @@
         @media print {
             body { background: white !important; color: black !important; }
             header, footer, nav, button, .no-print { display: none !important; }
-            .print-area { display: block !important; width: 100%; position: absolute; top: 0; left: 0; background: white; color: black; padding: 20px; }
+            .print-area { display: block !important; width: 100%; position: absolute; top: 0; left: 0; background: white; color: black; padding: 10px; }
         }
     </style>
 </head>
@@ -135,9 +135,7 @@
             modal.classList.remove('hidden');
         }
 
-        function closeModal() {
-            document.getElementById('global-modal').classList.add('hidden');
-        }
+        function closeModal() { document.getElementById('global-modal').classList.add('hidden'); }
 
         window.addEventListener('DOMContentLoaded', async () => {
             await fetchSettings();
@@ -177,7 +175,7 @@
         }
 
         // ==========================================
-        // LOGIN HALAMAN UTAMA
+        // LOGIN HALAMAN UTAMA (Tanpa PIN Siswa)
         // ==========================================
         function renderHomeOrDashboard() {
             renderAuthStatus();
@@ -191,7 +189,7 @@
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <h2 class="text-2xl font-bold text-white">Portal Ujian Sumatif</h2>
-                            <p class="text-sm text-slate-400">SMKN 1 Wakatobi - Kurikulum Merdeka</p>
+                            <p class="text-sm text-slate-400">SMKN 1 Wakatobi - Standar ANBK / TKA</p>
                         </div>
                         <div class="flex rounded-xl bg-slate-800 p-1.5 border border-slate-700">
                             <button onclick="switchLoginTab('student')" id="tab-student" class="flex-1 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white transition shadow">Siswa</button>
@@ -219,16 +217,18 @@
             if (role === 'student') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'student')" class="space-y-4">
-                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Login Siswa</h3>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">NISN</label><input type="text" id="login-nisn" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <div><label class="block text-xs font-medium text-slate-300 mb-1">PIN</label><input type="password" id="login-pin" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-sm">Masuk Ujian</button>
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Login Peserta Ujian</h3>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-300 mb-1">Nomor Induk Siswa Nasional (NISN)</label>
+                            <input type="text" id="login-nisn" required placeholder="Sesuai Kartu Ujian (ANBK)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2.5 rounded-xl text-sm transition">Masuk Ujian</button>
                     </form>
                 `;
             } else if (role === 'teacher') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'teacher')" class="space-y-4">
-                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Login Guru</h3>
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Login Guru Mapel</h3>
                         <div><label class="block text-xs font-medium text-slate-300 mb-1">No HP</label><input type="text" id="login-phone" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
                         <div><label class="block text-xs font-medium text-slate-300 mb-1">PIN</label><input type="password" id="login-tpin" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm">Masuk Dashboard</button>
@@ -237,7 +237,7 @@
             } else if (role === 'admin') {
                 container.innerHTML = `
                     <form onsubmit="handleLogin(event, 'admin')" class="space-y-4">
-                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-shield text-amber-400 mr-2"></i>Login Admin</h3>
+                        <h3 class="text-base font-bold text-white mb-2"><i class="fa-solid fa-user-shield text-amber-400 mr-2"></i>Login Administrator</h3>
                         <div><label class="block text-xs font-medium text-slate-300 mb-1">Username</label><input type="text" id="login-admin-user" required value="admin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
                         <div><label class="block text-xs font-medium text-slate-300 mb-1">Password</label><input type="password" id="login-admin-pass" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white"></div>
                         <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-xl text-sm">Masuk Admin</button>
@@ -262,10 +262,9 @@
                 else { showModal('Login Gagal', 'No HP atau PIN Guru tidak terdaftar!', 'error'); return; }
             } else if (role === 'student') {
                 const nisn = document.getElementById('login-nisn').value;
-                const pin = document.getElementById('login-pin').value;
-                const { data } = await supabaseClient.from('students').select('*').eq('nisn', nisn).eq('pin', pin).single();
+                const { data } = await supabaseClient.from('students').select('*').eq('nisn', nisn).single();
                 if (data) currentUser = { role: 'student', data };
-                else { showModal('Login Gagal', 'NISN atau PIN Siswa salah!', 'error'); return; }
+                else { showModal('Login Gagal', 'NISN tidak ditemukan dalam daftar peserta ujian!', 'error'); return; }
             }
             renderHomeOrDashboard();
             showModal('Login Berhasil', `Selamat datang, ${currentUser.data.name || currentUser.data.username}`);
@@ -281,14 +280,13 @@
                     <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <h2 class="text-xl font-bold text-white flex items-center"><i class="fa-solid fa-gauge text-amber-400 mr-2"></i>Panel Administrator</h2>
-                            <p class="text-xs text-slate-400">Token Otomatis, Rekap Nilai Spesifik per Kelas, Upload Kolektif & Manajemen Ujian SMKN 1 Wakatobi.</p>
+                            <p class="text-xs text-slate-400">Token Otomatis, Cetak Kartu Ujian Ala ANBK/TKA, Rekap Nilai & Manajemen Siswa.</p>
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button onclick="adminTab('tokens')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-key mr-1"></i> Token</button>
-                            <button onclick="adminTab('reports')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-print mr-1"></i> Rekap Nilai & Cetak</button>
+                            <button onclick="adminTab('reports')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu & Rekap</button>
                             <button onclick="adminTab('bulk')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs rounded-xl font-medium text-white"><i class="fa-solid fa-file-arrow-up mr-1"></i> Upload Kolektif</button>
                             <button onclick="adminTab('settings')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-gear mr-1"></i> Pengaturan</button>
-                            <button onclick="adminTab('teachers')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-chalkboard-user mr-1"></i> Guru</button>
                             <button onclick="adminTab('students')" class="px-3 py-1.5 bg-slate-700 text-xs rounded-xl"><i class="fa-solid fa-user-graduate mr-1"></i> Siswa</button>
                             <button onclick="adminTab('exams')" class="px-3 py-1.5 bg-blue-600 text-xs rounded-xl text-white"><i class="fa-solid fa-file-shield mr-1"></i> Soal</button>
                         </div>
@@ -315,61 +313,44 @@
             } else if (tab === 'bulk') {
                 area.innerHTML = `
                     <div class="space-y-6">
-                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-arrow-up text-emerald-400 mr-2"></i>Upload Data Kolektif (Siswa & Guru)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4">
-                                <h4 class="font-bold text-white text-sm">Upload Kolektif Siswa</h4>
-                                <button onclick="downloadStudentTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-600"><i class="fa-solid fa-download mr-1"></i> Unduh Template CSV Siswa</button>
-                                <input type="file" id="csv-students-file" accept=".csv" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
-                                <button onclick="uploadBulkStudents()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl">Proses Upload Siswa</button>
-                            </div>
-                            <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4">
-                                <h4 class="font-bold text-white text-sm">Upload Kolektif Guru</h4>
-                                <button onclick="downloadTeacherTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-600"><i class="fa-solid fa-download mr-1"></i> Unduh Template CSV Guru</button>
-                                <input type="file" id="csv-teachers-file" accept=".csv" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white">
-                                <button onclick="uploadBulkTeachers()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl">Proses Upload Guru</button>
-                            </div>
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-file-arrow-up text-emerald-400 mr-2"></i>Upload Data Kolektif Siswa</h3>
+                        <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4 max-w-xl">
+                            <p class="text-xs text-slate-400">Format CSV (Kolom PIN tidak lagi diperlukan): <code class="text-blue-400">nisn,name,kelas</code></p>
+                            <button onclick="downloadStudentTemplate()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-600"><i class="fa-solid fa-download mr-1"></i> Unduh Template CSV Siswa</button>
+                            <input type="file" id="csv-students-file" accept=".csv" class="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white">
+                            <button onclick="uploadBulkStudents()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl">Proses Upload Siswa</button>
                         </div>
                     </div>
                 `;
             } else if (tab === 'reports') {
-                // Ambil daftar kelas unik dari tabel students
                 const { data: studentList } = await supabaseClient.from('students').select('kelas');
                 const uniqueClasses = [...new Set((studentList || []).map(s => s.kelas))].sort();
 
                 area.innerHTML = `
                     <div class="space-y-6">
-                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-print text-indigo-400 mr-2"></i>Pusat Rekap Nilai Spesifik per Kelas & Dokumen</h3>
+                        <h3 class="text-base font-bold text-white"><i class="fa-solid fa-print text-indigo-400 mr-2"></i>Pusat Cetak Kartu Peserta Ujian (Ala TKA / ANBK)</h3>
                         
-                        <!-- Panel Rekap Per Kelas -->
+                        <!-- Panel Cetak Kartu Ujian -->
                         <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl space-y-4">
-                            <h4 class="font-bold text-white text-sm"><i class="fa-solid fa-filter text-blue-400 mr-2"></i>Rekap Nilai Berdasarkan Kelas Spesifik</h4>
-                            <p class="text-xs text-slate-400">Pilih kelas tertentu untuk melihat dan mengunduh rekap nilai khusus kelas tersebut (misalnya khusus kelas XI TKJ).</p>
+                            <h4 class="font-bold text-white text-sm"><i class="fa-solid fa-id-card text-blue-400 mr-2"></i>Cetak Kartu Login Peserta per Kelas</h4>
+                            <p class="text-xs text-slate-400">Pilih kelas untuk mencetak kartu peserta ujian resmi dengan NISN sebagai ID Login.</p>
                             <div class="flex flex-col sm:flex-row gap-3">
-                                <select id="select-class-filter" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
-                                    <option value="">-- Pilih Kelas Spesifik --</option>
+                                <select id="select-card-class" class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500">
+                                    <option value="">-- Pilih Kelas --</option>
                                     ${uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('')}
                                 </select>
-                                <button onclick="downloadClassCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition"><i class="fa-solid fa-file-excel mr-1"></i> Unduh CSV Kelas</button>
-                                <button onclick="printClassReport()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition"><i class="fa-solid fa-print mr-1"></i> Cetak PDF Kelas</button>
+                                <button onclick="printANBKCards()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-6 py-2.5 rounded-xl transition"><i class="fa-solid fa-print mr-1"></i> Cetak Kartu Peserta (ANBK Style)</button>
                             </div>
                         </div>
 
-                        <!-- Panel Rekap Global & Cetak Dokumen -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Panel Rekap Nilai -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between">
                                 <div>
-                                    <h4 class="font-bold text-white text-sm">Rekap Nilai Seluruh Siswa</h4>
-                                    <p class="text-xs text-slate-400 mt-1">Unduh rekap nilai keseluruhan seluruh siswa (Semua Kelas).</p>
+                                    <h4 class="font-bold text-white text-sm">Rekap Nilai Seluruh Siswa (CSV)</h4>
+                                    <p class="text-xs text-slate-400 mt-1">Unduh seluruh hasil ujian dalam format spreadsheet.</p>
                                 </div>
-                                <button onclick="downloadExcelCSV()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-file-excel mr-1"></i> Download CSV Global</button>
-                            </div>
-                            <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between">
-                                <div>
-                                    <h4 class="font-bold text-white text-sm">Cetak Kartu Peserta Ujian</h4>
-                                    <p class="text-xs text-slate-400 mt-1">Kartu peserta lengkap NISN dan PIN Siswa.</p>
-                                </div>
-                                <button onclick="printExamCards()" class="mt-4 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-id-card mr-1"></i> Cetak Kartu</button>
+                                <button onclick="downloadExcelCSV()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl"><i class="fa-solid fa-file-excel mr-1"></i> Download CSV</button>
                             </div>
                             <div class="bg-slate-900 border border-slate-700 p-5 rounded-2xl flex flex-col justify-between">
                                 <div>
@@ -393,19 +374,11 @@
                         <button type="submit" class="bg-blue-600 text-white font-semibold px-6 py-2 rounded-xl text-sm">Simpan</button>
                     </form>
                 `;
-            } else if (tab === 'teachers') {
-                const { data: teachers } = await supabaseClient.from('teachers').select('*');
-                area.innerHTML = `
-                    <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-chalkboard-user text-emerald-400 mr-2"></i>Data Guru</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-900 text-slate-400"><tr><th class="p-3">Nama</th><th class="p-3">NIP</th><th class="p-3">No HP</th></tr></thead><tbody class="divide-y divide-slate-700">
-                    ${(teachers || []).map(t => `<tr><td class="p-3 font-semibold text-white">${t.name}</td><td class="p-3">${t.nip || '-'}</td><td class="p-3">${t.phone}</td></tr>`).join('')}
-                    </tbody></table></div>
-                `;
             } else if (tab === 'students') {
                 const { data: students } = await supabaseClient.from('students').select('*').limit(50);
                 area.innerHTML = `
                     <h3 class="text-base font-bold text-white mb-4"><i class="fa-solid fa-user-graduate text-blue-400 mr-2"></i>Data Siswa</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-900 text-slate-400"><tr><th class="p-3">NISN</th><th class="p-3">Nama</th><th class="p-3">Kelas</th></tr></thead><tbody class="divide-y divide-slate-700">
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-900 text-slate-400"><tr><th class="p-3">NISN (ID Login)</th><th class="p-3">Nama</th><th class="p-3">Kelas</th></tr></thead><tbody class="divide-y divide-slate-700">
                     ${(students || []).map(s => `<tr><td class="p-3 font-mono">${s.nisn}</td><td class="p-3 font-semibold text-white">${s.name}</td><td class="p-3">${s.kelas}</td></tr>`).join('')}
                     </tbody></table></div>
                 `;
@@ -425,159 +398,83 @@
             }
         }
 
-        // --- Template Download CSV ---
-        function downloadStudentTemplate() {
-            const csvContent = "nisn,name,kelas,pin\n0081234567,Ahmad Fauzi,XI TKJ,12345\n0087654321,Siti Aminah,XI MM,12345";
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'template_siswa_supabase.csv'; a.click();
-        }
-
-        function downloadTeacherTemplate() {
-            const csvContent = "name,nip,phone,pin\nLa Ode Ahmad, S.Pd.,19800101...,081234567890,12345\nSitti Nurhaliza, S.T.,19850505...,089876543210,12345";
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'template_guru_supabase.csv'; a.click();
-        }
-
-        async function uploadBulkStudents() {
-            const fileInput = document.getElementById('csv-students-file');
-            if (!fileInput.files[0]) { showModal('Pilih File', 'Pilih file CSV terlebih dahulu!', 'error'); return; }
-            const text = await fileInput.files[0].text();
-            const lines = text.split('\n').slice(1);
-            let count = 0;
-            for (let line of lines) {
-                const cols = line.trim().split(',');
-                if (cols.length >= 4) {
-                    await supabaseClient.from('students').upsert({ nisn: cols[0], name: cols[1], kelas: cols[2], pin: cols[3] }, { onConflict: 'nisn' });
-                    count++;
-                }
-            }
-            showModal('Berhasil', `${count} data siswa berhasil diunggah.`);
-        }
-
-        async function uploadBulkTeachers() {
-            const fileInput = document.getElementById('csv-teachers-file');
-            if (!fileInput.files[0]) { showModal('Pilih File', 'Pilih file CSV terlebih dahulu!', 'error'); return; }
-            const text = await fileInput.files[0].text();
-            const lines = text.split('\n').slice(1);
-            let count = 0;
-            for (let line of lines) {
-                const cols = line.trim().split(',');
-                if (cols.length >= 4) {
-                    await supabaseClient.from('teachers').insert({ name: cols[0], nip: cols[1], phone: cols[2], pin: cols[3] });
-                    count++;
-                }
-            }
-            showModal('Berhasil', `${count} data guru berhasil diunggah.`);
-        }
-
-        // --- Rekap Nilai Global CSV ---
-        async function downloadExcelCSV() {
-            const { data: results } = await supabaseClient.from('student_results').select('*, exams(title, subject)');
-            if (!results || results.length === 0) { showModal('Kosong', 'Belum ada data nilai ujian.', 'error'); return; }
-            let csv = 'NISN,Nama Siswa,Mata Pelajaran,Judul Ujian,Nilai,Waktu Pengumpulan\n';
-            results.forEach(r => {
-                csv += `"${r.student_nisn}","${r.student_name}","${r.exams?.subject || '-'}","${r.exams?.title || '-'}","${r.score}","${r.submitted_at}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `rekap_nilai_global_${currentSettings.school_name}.csv`; a.click();
-        }
-
-        // --- Rekap Nilai Spesifik per Kelas (CSV & PDF Print) ---
-        async function downloadClassCSV() {
-            const selectedClass = document.getElementById('select-class-filter').value;
+        // --- Fitur Cetak Kartu Ujian Ala TKA / ANBK ---
+        async function printANBKCards() {
+            const selectedClass = document.getElementById('select-card-class').value;
             if (!selectedClass) { showModal('Pilih Kelas', 'Silakan pilih kelas terlebih dahulu!', 'error'); return; }
 
-            // Ambil siswa di kelas tersebut
-            const { data: students } = await supabaseClient.from('students').select('nisn, name, kelas').eq('kelas', selectedClass);
+            const { data: students } = await supabaseClient.from('students').select('*').eq('kelas', selectedClass);
             if (!students || students.length === 0) { showModal('Kosong', `Tidak ada siswa di kelas ${selectedClass}`, 'error'); return; }
-
-            const nisnList = students.map(s => s.nisn);
-            const { data: results } = await supabaseClient.from('student_results').select('*, exams(title, subject)').in('student_nisn', nisnList);
-
-            let csv = `REKAP NILAI SAS - KELAS ${selectedClass}\nNISN,Nama Siswa,Kelas,Mata Pelajaran,Nilai,Waktu Ujian\n`;
-            students.forEach(s => {
-                const studentRes = (results || []).filter(r => r.student_nisn === s.nisn);
-                if (studentRes.length > 0) {
-                    studentRes.forEach(r => {
-                        csv += `"${s.nisn}","${s.name}","${s.kelas}","${r.exams?.subject || '-'}","${r.score}","${r.submitted_at}"\n`;
-                    });
-                } else {
-                    csv += `"${s.nisn}","${s.name}","${s.kelas}","-","Belum Ujian","-"\n`;
-                }
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = `rekap_nilai_kelas_${selectedClass}.csv`; a.click();
-        }
-
-        async function printClassReport() {
-            const selectedClass = document.getElementById('select-class-filter').value;
-            if (!selectedClass) { showModal('Pilih Kelas', 'Silakan pilih kelas terlebih dahulu!', 'error'); return; }
-
-            const { data: students } = await supabaseClient.from('students').select('nisn, name, kelas').eq('kelas', selectedClass);
-            const nisnList = (students || []).map(s => s.nisn);
-            const { data: results } = await supabaseClient.from('student_results').select('*, exams(title, subject)').in('student_nisn', nisnList);
 
             const printWin = window.open('', '_blank');
             printWin.document.write(`
                 <html>
                 <head>
-                    <title>Rekap Nilai Kelas ${selectedClass} - ${currentSettings.school_name}</title>
+                    <title>Kartu Peserta Ujian - Kelas ${selectedClass}</title>
                     <script src="https://cdn.tailwindcss.com"></` + `script>
+                    <style>
+                        @page { size: A4; margin: 10mm; }
+                        .card { break-inside: avoid; border: 2px solid #000; padding: 15px; border-radius: 8px; background: #fff; height: 180px; display: flex; flex-direction: column; justify-content: space-between; font-family: sans-serif; }
+                    </style>
                 </head>
-                <body class="bg-white text-black p-8 font-sans text-xs">
-                    <div class="text-center border-b-2 border-black pb-4 mb-6">
-                        <h2 class="font-bold text-base">PEMERINTAH PROVINSI SULAWESI TENGGARA</h2>
-                        <h2 class="font-bold text-lg">${currentSettings.school_name.toUpperCase()}</h2>
-                        <p class="text-xs">DAFTAR NILAI PENILAIAN SUMATIF AKHIR SEMESTER (SAS)</p>
-                        <p class="text-xs font-bold mt-1">KELAS: ${selectedClass} &bull; TA: ${currentSettings.academic_year} (${currentSettings.semester})</p>
-                    </div>
-                    <table class="w-full border-collapse border border-black text-left">
-                        <thead>
-                            <tr class="bg-slate-200">
-                                <th class="border border-black p-2">No</th>
-                                <th class="border border-black p-2">NISN</th>
-                                <th class="border border-black p-2">Nama Siswa</th>
-                                <th class="border border-black p-2">Mata Pelajaran</th>
-                                <th class="border border-black p-2 text-center">Nilai</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(students || []).map((s, idx) => {
-                                const studentRes = (results || []).filter(r => r.student_nisn === s.nisn);
-                                if (studentRes.length === 0) {
-                                    return `<tr><td class="border border-black p-2 text-center">${idx+1}</td><td class="border border-black p-2">${s.nisn}</td><td class="border border-black p-2 font-semibold">${s.name}</td><td class="border border-black p-2">-</td><td class="border border-black p-2 text-center text-rose-600">Belum Ujian</td></tr>`;
-                                }
-                                return studentRes.map(r => `
-                                    <tr>
-                                        <td class="border border-black p-2 text-center">${idx+1}</td>
-                                        <td class="border border-black p-2">${s.nisn}</td>
-                                        <td class="border border-black p-2 font-semibold">${s.name}</td>
-                                        <td class="border border-black p-2">${r.exams?.subject || '-'}</td>
-                                        <td class="border border-black p-2 text-center font-bold">${r.score}</td>
-                                    </tr>
-                                `).join('');
-                            }).join('')}
-                        </tbody>
-                    </table>
-                    <div class="grid grid-cols-2 mt-12 text-center">
-                        <div></div>
-                        <div>
-                            <p>Kepala ${currentSettings.school_name},</p>
-                            <br><br><br>
-                            <p class="font-bold underline">${currentSettings.headmaster_name}</p>
-                            <p class="text-xs">NIP. ${currentSettings.headmaster_nip}</p>
-                        </div>
+                <body class="bg-white text-black">
+                    <h1 class="text-center font-bold text-sm mb-4">KARTU PESERTA PENILAIAN SUMATIF AKHIR SEMESTER (SAS)<br>${currentSettings.school_name.toUpperCase()} - TAHUN AJARAN ${currentSettings.academic_year}</h1>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${students.map(s => `
+                            <div class="card">
+                                <div class="flex justify-between items-center border-b pb-1">
+                                    <span class="text-[9px] font-bold uppercase">KARTU LOGIN UJIAN CBT</span>
+                                    <span class="text-[9px] font-mono font-bold bg-slate-200 px-2 py-0.5 rounded">${s.kelas}</span>
+                                </div>
+                                <div class="text-xs space-y-1 my-1">
+                                    <div class="flex"><span class="w-20 text-slate-600 font-semibold">Nama:</span><span class="font-bold flex-1">${s.name}</span></div>
+                                    <div class="flex"><span class="w-20 text-slate-600 font-semibold">Username:</span><span class="font-mono font-bold text-blue-700 flex-1">${s.nisn}</span></div>
+                                    <div class="flex"><span class="w-20 text-slate-600 font-semibold">Keterangan:</span><span class="text-[10px] text-emerald-700 italic flex-1">Tanpa PIN (Gunakan Token)</span></div>
+                                </div>
+                                <div class="text-[8px] text-slate-500 flex justify-between pt-1 border-t">
+                                    <span>${currentSettings.school_name}</span>
+                                    <span>Kepala Sekolah, TTD</span>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                     <script>window.print();</script>
                 </body>
                 </html>
             `);
             printWin.document.close();
+        }
+
+        function downloadStudentTemplate() {
+            const csvContent = "nisn,name,kelas\n0081234567,Ahmad Fauzi,XI TKJ\n0087654321,Siti Aminah,XI MM";
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'template_siswa_anbk.csv'; a.click();
+        }
+
+        async function uploadBulkStudents() {
+            const fileInput = document.getElementById('csv-students-file');
+            if (!fileInput.files[0]) { showModal('Pilih File', 'Pilih file CSV!', 'error'); return; }
+            const text = await fileInput.files[0].text();
+            const lines = text.split('\n').slice(1);
+            let count = 0;
+            for (let line of lines) {
+                const cols = line.trim().split(',');
+                if (cols.length >= 3) {
+                    await supabaseClient.from('students').upsert({ nisn: cols[0], name: cols[1], kelas: cols[2] }, { onConflict: 'nisn' });
+                    count++;
+                }
+            }
+            showModal('Berhasil', `${count} data siswa berhasil diunggah.`);
+        }
+
+        async function downloadExcelCSV() {
+            const { data: results } = await supabaseClient.from('student_results').select('*, exams(title, subject)');
+            let csv = 'NISN,Nama Siswa,Mata Pelajaran,Judul Ujian,Nilai,Waktu\n';
+            (results || []).forEach(r => { csv += `"${r.student_nisn}","${r.student_name}","${r.exams?.subject || '-'}","${r.exams?.title || '-'}","${r.score}","${r.submitted_at}"\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'rekap_nilai_global.csv'; a.click();
         }
 
         async function generateNewToken() {
@@ -609,7 +506,6 @@
             await supabaseClient.from('exams').update({ is_active: status }).eq('id', id);
         }
 
-        function printExamCards() { window.open('', '_blank').document.write('<h1>Fitur Kartu Peserta</h1>'); }
         function printMinutesOfExam() { window.open('', '_blank').document.write('<h1>Berita Acara</h1>'); }
 
         // ==========================================
@@ -656,7 +552,7 @@
             content.innerHTML = `
                 <div class="space-y-6">
                     <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 rounded-2xl flex justify-between items-center">
-                        <div><h2 class="text-xl font-bold text-white">${currentUser.data.name}</h2><p class="text-xs text-blue-200">NISN: ${currentUser.data.nisn} &bull; Kelas: ${currentUser.data.kelas}</p></div>
+                        <div><h2 class="text-xl font-bold text-white">${currentUser.data.name}</h2><p class="text-xs text-blue-200">NISN (ID Login): ${currentUser.data.nisn} &bull; Kelas: ${currentUser.data.kelas}</p></div>
                     </div>
                     <h3 class="text-base font-bold text-white">Daftar Ujian Aktif</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -672,7 +568,7 @@
         }
 
         function promptTokenAndStart(exam) {
-            const tokenInput = prompt("Masukkan Token Ujian:");
+            const tokenInput = prompt("Masukkan Token Ujian (Dari Pengawas):");
             if (!tokenInput) return;
             if (tokenInput.trim().toUpperCase() !== activeToken.toUpperCase()) {
                 showModal('Token Salah', 'Token ujian tidak valid!', 'error');
@@ -680,9 +576,7 @@
             }
             
             const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(err => { console.warn("Fullscreen error:", err); });
-            }
+            if (elem.requestFullscreen) { elem.requestFullscreen().catch(() => {}); }
             startExam(exam);
         }
 
@@ -731,7 +625,7 @@
 
         function handleFullscreenExit() {
             if (!document.fullscreenElement && activeExamSession) {
-                alert("PERINGATAN: Anda keluar dari mode Layar Penuh (Fullscreen)! Tindakan ini dicatat sebagai pelanggaran ujian.");
+                alert("PERINGATAN: Anda keluar dari mode Layar Penuh (Fullscreen)! Tindakan ini dicatat sebagai pelanggaran.");
             }
         }
 
